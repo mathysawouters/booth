@@ -9,7 +9,7 @@ export function xpForMinutes(minutes: number): number {
 export function levelForXp(xp: number) {
   let level = 1;
   let levelXp = Math.max(0, xp);
-  let nextLevelXp = 50;
+  let nextLevelXp = 20;
   while (levelXp >= nextLevelXp) {
     levelXp -= nextLevelXp;
     level += 1;

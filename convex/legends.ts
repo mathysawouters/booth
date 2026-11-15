@@ -86,7 +86,8 @@ async function loadPlan(
   const kid = await requireParentOf(ctx, args.kid);
   const today = await legendsOnDay(ctx, args.kid, args.day);
   const existing = today.find(
-    (legend) => legend.mode === args.mode && legend.category === args.category,
+    (legend) =>
+      legend.status === "open" && legend.mode === args.mode && legend.category === args.category,
   );
   const recent = await ctx.db
     .query("legends")
@@ -168,7 +169,8 @@ export const insertLegend = internalMutation({
   handler: async (ctx, args) => {
     if (!args.rerolled) {
       const existing = (await legendsOnDay(ctx, args.kid, args.day)).find(
-        (legend) => legend.mode === args.mode && legend.category === args.category,
+        (legend) =>
+          legend.status === "open" && legend.mode === args.mode && legend.category === args.category,
       );
       if (existing) {
         return existing._id;
