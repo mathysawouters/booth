@@ -1,236 +1,169 @@
-import { useMutation, useQuery } from 'convex/react';
+import { useAction, useMutation, useQuery } from 'convex/react';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Strip } from '@/components/strip';
+import { KidSwitcher } from '@/components/kid-switcher';
+import { Leggy } from '@/components/leggy';
+import { LeggyWaiting } from '@/components/leggy-waiting';
+import { LegendView } from '@/components/legend-view';
+import { Picker } from '@/components/picker';
 import { Body, Button, Loading, Title } from '@/components/ui';
 import { BottomTabInset, Colors, MaxContentWidth, Spacing } from '@/constants/theme';
-import { formatDay, localDay } from '@/lib/day';
+import { localDay } from '@/lib/day';
 import { errorMessage } from '@/lib/errors';
+import { useKids } from '@/lib/kids';
+import type { Category, Kid, KidId, Legend, Mode } from '@/lib/types';
 import { api } from '../../../convex/_generated/api';
-import type { Id } from '../../../convex/_generated/dataModel';
-
-const EMOJIS = ['❤️', '😂', '😮', '🔥', '👏', '😭'];
-
-type Reaction = { user: Id<'users'>; emoji: string };
-
-function summarize(reactions: Reaction[]) {
-  const counts = new Map<string, number>();
-  for (const { emoji } of reactions) {
-    counts.set(emoji, (counts.get(emoji) ?? 0) + 1);
-  }
-  return [...counts.entries()];
-}
 
 export default function TodayScreen() {
-  const insets = useSafeAreaInsets();
-  const day = localDay(new Date());
-  const today = useQuery(api.strips.friendsStripsToday, { day });
-  const me = useQuery(api.users.me);
-  const react = useMutation(api.reactions.react);
-  const [selected, setSelected] = useState<Id<'strips'> | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const { kids, kid, select } = useKids();
 
-  if (today === undefined) {
+  if (kids === undefined) {
     return <Loading />;
   }
+  if (kid === null) {
+    return <Welcome />;
+  }
+  return <KidToday key={kid._id} kid={kid} kids={kids} onSelect={select} />;
+}
 
-  const selectedStrip = today.strips.find((strip) => strip._id === selected);
-  const myReaction = selectedStrip?.reactions.find((r) => r.user === me?._id)?.emoji;
+function Welcome() {
+  const insets = useSafeAreaInsets();
+  return (
+    <View style={[styles.screen, styles.welcome, { paddingTop: insets.top + Spacing.five }]}>
+      <Leggy size={180} />
+      <Title style={styles.centerText}>Hi, I&apos;m Leggy!</Title>
+      <Body muted style={styles.centerText}>
+        Tell me about your kid and I&apos;ll find one fun thing to do together every day.
+      </Body>
+      <Button label="Add your kid" icon="add" variant="accent" onPress={() => router.push('/add-kid')} />
+    </View>
+  );
+}
 
-  async function choose(emoji: string) {
-    if (selected === null) return;
-    setSelected(null);
+function KidToday({ kid, kids, onSelect }: { kid: Kid; kids: Kid[]; onSelect: (id: KidId) => void }) {
+  const insets = useSafeAreaInsets();
+  const day = localDay(new Date());
+  const legend = useQuery(api.legends.legendToday, { kid: kid._id, day }) as Legend | null | undefined;
+  const streak = useQuery(api.kids.streak, { kid: kid._id, day }) as number | undefined;
+  const todaysLegend = useAction(api.legends.todaysLegend);
+  const skipLegend = useMutation(api.legends.skipLegend);
+  const [picking, setPicking] = useState(false);
+  const [fresh, setFresh] = useState<Legend | null>(null);
+  const [waiting, setWaiting] = useState(false);
+  const [rerolling, setRerolling] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const current = fresh !== null && legend?._id !== fresh._id ? fresh : legend;
+
+  async function generate(choice: { mode: Mode; category: Category; minutes: number }) {
+    setError(null);
+    setWaiting(true);
     try {
-      await react({ strip: selected, emoji });
+      setFresh((await todaysLegend({ kid: kid._id, day, ...choice })) as Legend);
+      setPicking(false);
+    } catch (e) {
+      setError(errorMessage(e));
+    } finally {
+      setWaiting(false);
+    }
+  }
+
+  async function reroll(open: Legend) {
+    setError(null);
+    setRerolling(true);
+    try {
+      setFresh(
+        (await todaysLegend({
+          kid: kid._id,
+          day,
+          mode: open.mode,
+          category: open.category,
+          minutes: open.minutes,
+          reroll: true,
+        })) as Legend,
+      );
+    } catch (e) {
+      setError(errorMessage(e));
+    } finally {
+      setRerolling(false);
+    }
+  }
+
+  async function skip(open: Legend) {
+    setError(null);
+    try {
+      await skipLegend({ legend: open._id });
+      setFresh(null);
     } catch (e) {
       setError(errorMessage(e));
     }
   }
 
+  if (waiting) {
+    return <LeggyWaiting />;
+  }
+  if (current === undefined) {
+    return <Loading />;
+  }
+
+  const open = current?.status === 'open' ? current : null;
+  const params = { kid: kid._id, day };
+
   return (
-    <View style={styles.screen}>
-      <ScrollView
-        contentContainerStyle={[
-          styles.content,
-          { paddingTop: insets.top + Spacing.three, paddingBottom: insets.bottom + BottomTabInset + Spacing.five },
-        ]}>
-        <View style={styles.header}>
-          <Title>Today</Title>
-          <Body muted>{formatDay(day)}</Body>
-        </View>
-
-        {error !== null && <Body style={styles.bold}>{error}</Body>}
-
-        {today.locked ? (
-          <View style={styles.lockedCard}>
-            <Text style={styles.lockedTitle}>Post yours first</Text>
-            <Body muted>Your friends&apos; strips unlock once you post today&apos;s.</Body>
-            <Button label="Open the booth" onPress={() => router.push('/booth')} />
-          </View>
-        ) : today.strips.length === 0 ? (
-          <View style={styles.empty}>
-            <Body style={styles.bold}>You posted today.</Body>
-            <Body muted>No friends have posted yet. Check back later, or add more friends.</Body>
-          </View>
-        ) : (
-          today.strips.map((strip) => (
-            <View key={strip._id} style={styles.item}>
-              <Text style={styles.author}>@{strip.authorUsername ?? 'unknown'}</Text>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={`React to ${strip.authorUsername ?? 'this'} strip`}
-                onPress={() => {
-                  setError(null);
-                  setSelected(strip._id);
-                }}
-                style={({ pressed }) => pressed && styles.pressed}>
-                <Strip photos={strip.photoUrls} day={strip.day} width={260} />
-              </Pressable>
-              <View style={styles.reactions}>
-                {summarize(strip.reactions).map(([emoji, count]) => (
-                  <View key={emoji} style={styles.chip}>
-                    <Text style={styles.chipText}>
-                      {emoji} {count}
-                    </Text>
-                  </View>
-                ))}
-                {strip.reactions.length === 0 && <Body muted>Tap the strip to react</Body>}
-              </View>
-            </View>
-          ))
-        )}
-      </ScrollView>
-
-      <Modal transparent animationType="fade" visible={selected !== null} onRequestClose={() => setSelected(null)}>
-        <Pressable style={styles.backdrop} onPress={() => setSelected(null)}>
-          <View style={styles.sheet}>
-            <Text style={styles.sheetTitle}>React</Text>
-            <View style={styles.emojiRow}>
-              {EMOJIS.map((emoji) => (
-                <Pressable
-                  key={emoji}
-                  accessibilityRole="button"
-                  accessibilityLabel={`React with ${emoji}`}
-                  onPress={() => choose(emoji)}
-                  style={[styles.emojiButton, myReaction === emoji && styles.emojiSelected]}>
-                  <Text style={styles.emoji}>{emoji}</Text>
-                </Pressable>
-              ))}
-            </View>
-            {myReaction !== undefined && <Body muted>Tap your reaction again to remove it.</Body>}
-          </View>
-        </Pressable>
-      </Modal>
-    </View>
+    <ScrollView
+      style={styles.screen}
+      contentContainerStyle={[
+        styles.content,
+        { paddingTop: insets.top + Spacing.three, paddingBottom: insets.bottom + BottomTabInset + Spacing.five },
+      ]}>
+      <KidSwitcher kids={kids} selected={kid._id} onSelect={onSelect} />
+      {error !== null && <Body style={styles.error}>{error}</Body>}
+      {open !== null && !picking ? (
+        <LegendView
+          legend={open}
+          rerolling={rerolling}
+          onRead={() => router.push({ pathname: '/story', params })}
+          onDone={() => router.push({ pathname: '/done', params })}
+          onReroll={() => reroll(open)}
+          onPicker={() => setPicking(true)}
+          onSkip={() => skip(open)}
+        />
+      ) : (
+        <Picker
+          streak={streak}
+          doneToday={current?.status === 'done'}
+          onBack={open !== null ? () => setPicking(false) : undefined}
+          onPick={generate}
+        />
+      )}
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: Colors.black,
+    backgroundColor: Colors.white,
   },
   content: {
     width: '100%',
     maxWidth: MaxContentWidth,
     alignSelf: 'center',
     paddingHorizontal: Spacing.four,
-    gap: Spacing.five,
+    gap: Spacing.four,
   },
-  header: {
-    gap: Spacing.one,
-  },
-  bold: {
-    fontWeight: '700',
-  },
-  lockedCard: {
-    borderWidth: 2,
-    borderColor: Colors.white,
-    borderRadius: 24,
-    padding: Spacing.four,
-    gap: Spacing.three,
-  },
-  lockedTitle: {
-    color: Colors.white,
-    fontSize: 34,
-    fontWeight: '900',
-  },
-  empty: {
-    gap: Spacing.two,
-  },
-  item: {
-    gap: Spacing.three,
+  welcome: {
     alignItems: 'center',
+    gap: Spacing.four,
+    paddingHorizontal: Spacing.four,
   },
-  author: {
-    color: Colors.white,
-    fontSize: 24,
-    fontWeight: '800',
-    alignSelf: 'flex-start',
+  centerText: {
+    textAlign: 'center',
   },
-  pressed: {
-    opacity: 0.8,
-  },
-  reactions: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.two,
-    justifyContent: 'center',
-  },
-  chip: {
-    borderWidth: 1,
-    borderColor: Colors.white,
-    borderRadius: 999,
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.one,
-  },
-  chipText: {
-    color: Colors.white,
-    fontSize: 18,
+  error: {
     fontWeight: '700',
-  },
-  backdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    justifyContent: 'flex-end',
-  },
-  sheet: {
-    backgroundColor: Colors.black,
-    borderTopWidth: 2,
-    borderColor: Colors.white,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: Spacing.four,
-    paddingBottom: Spacing.six,
-    gap: Spacing.three,
-  },
-  sheetTitle: {
-    color: Colors.white,
-    fontSize: 28,
-    fontWeight: '900',
-  },
-  emojiRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    gap: Spacing.two,
-  },
-  emojiButton: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: Colors.black,
-  },
-  emojiSelected: {
-    borderColor: Colors.white,
-  },
-  emoji: {
-    fontSize: 30,
   },
 });

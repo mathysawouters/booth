@@ -20,8 +20,11 @@ export default function AppTabs() {
           <TabTrigger name="index" href="/" asChild>
             <TabButton>Today</TabButton>
           </TabTrigger>
-          <TabTrigger name="friends" href="/friends" asChild>
-            <TabButton>Friends</TabButton>
+          <TabTrigger name="book" href="/book" asChild>
+            <TabButton>Book</TabButton>
+          </TabTrigger>
+          <TabTrigger name="family" href="/family" asChild>
+            <TabButton>Family</TabButton>
           </TabTrigger>
         </TabBar>
       </TabList>
@@ -33,7 +36,7 @@ function TabBar(props: TabListProps) {
   return (
     <View {...props} style={styles.bar}>
       <View style={styles.inner}>
-        <Text style={styles.brand}>BOOTH</Text>
+        <Text style={styles.brand}>Little Legends</Text>
         {props.children}
       </View>
     </View>
@@ -57,7 +60,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     width: '100%',
     alignItems: 'center',
-    backgroundColor: Colors.black,
+    backgroundColor: Colors.white,
     borderTopWidth: 1,
     borderTopColor: Colors.line,
   },
@@ -70,7 +73,7 @@ const styles = StyleSheet.create({
     padding: Spacing.three,
   },
   brand: {
-    color: Colors.white,
+    color: Colors.black,
     fontSize: 22,
     fontWeight: '900',
     marginRight: 'auto',
@@ -80,10 +83,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.three,
     borderRadius: 999,
     borderWidth: 2,
-    borderColor: Colors.black,
+    borderColor: Colors.white,
   },
   tabFocused: {
-    borderColor: Colors.white,
+    borderColor: Colors.black,
   },
   tabLabel: {
     color: Colors.gray,
@@ -91,6 +94,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   tabLabelFocused: {
-    color: Colors.white,
+    color: Colors.black,
   },
 });
