@@ -1,6 +1,6 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Image } from 'expo-image';
-import { StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
 import { LeggySays } from '@/components/leggy';
 import { Body, Button, Card, TextButton } from '@/components/ui';
@@ -34,12 +34,18 @@ export function LegendView({
       {legend.challenge !== undefined && (
         <View style={styles.challenge}>
           <LeggySays mood="wow">{legend.challenge}</LeggySays>
-          {legend.challengeImageUrl !== null && (
-            <View style={styles.attempt}>
+          <View style={styles.attempt}>
+            {legend.challengeImageUrl !== null ? (
               <Image source={{ uri: legend.challengeImageUrl }} style={styles.attemptImage} contentFit="cover" />
-              <Text style={styles.caption}>Leggy&apos;s try. Can you do better?</Text>
-            </View>
-          )}
+            ) : (
+              <View style={[styles.attemptImage, styles.attemptPending]}>
+                <ActivityIndicator color={Colors.black} />
+              </View>
+            )}
+            <Text style={styles.caption}>
+              {legend.challengeImageUrl !== null ? "Leggy's try. Can you do better?" : 'Leggy is still drawing its try…'}
+            </Text>
+          </View>
         </View>
       )}
 
@@ -95,6 +101,10 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: Colors.black,
     backgroundColor: Colors.soft,
+  },
+  attemptPending: {
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   caption: {
     color: Colors.gray,
