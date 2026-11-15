@@ -3,11 +3,11 @@ import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import {
   action,
+  internalAction,
   internalMutation,
   internalQuery,
   mutation,
   query,
-  type ActionCtx,
   type QueryCtx,
 } from "./_generated/server";
 import { openaiImage, openaiJson, openaiText } from "./ai";
@@ -124,6 +124,11 @@ export const getWithUrls = internalQuery({
   },
 });
 
+export const getLegend = internalQuery({
+  args: { legend: v.id("legends") },
+  handler: async (ctx, { legend }) => await ctx.db.get("legends", legend),
+});
+
 export const memoryContext = internalQuery({
   args: { legend: v.id("legends") },
   handler: async (ctx, { legend: legendId }) => {
@@ -158,7 +163,6 @@ export const insertLegend = internalMutation({
     question: v.string(),
     skill: skillValidator,
     challenge: v.optional(v.string()),
-    challengeImage: v.optional(v.id("_storage")),
     rerolled: v.boolean(),
   },
   handler: async (ctx, args) => {
@@ -167,19 +171,33 @@ export const insertLegend = internalMutation({
         (legend) => legend.mode === args.mode && legend.category === args.category,
       );
       if (existing) {
-        if (args.challengeImage) {
-          await ctx.storage.delete(args.challengeImage);
-        }
         return existing._id;
       }
     }
-    return await ctx.db.insert("legends", {
+    const legendId = await ctx.db.insert("legends", {
       ...args,
       rerolled: args.rerolled || undefined,
       xp: xpForMinutes(args.minutes),
       status: "open",
       createdAt: Date.now(),
     });
+    if (args.challenge) {
+      await ctx.scheduler.runAfter(0, internal.legends.drawLeggyFail, { legend: legendId });
+    }
+    return legendId;
+  },
+});
+
+export const attachChallengeImage = internalMutation({
+  args: { legend: v.id("legends"), image: v.id("_storage") },
+  handler: async (ctx, { legend: legendId, image }) => {
+    const legend = await ctx.db.get("legends", legendId);
+    if (legend === null || legend.challengeImage !== undefined) {
+      await ctx.storage.delete(image);
+      return null;
+    }
+    await ctx.db.patch("legends", legendId, { challengeImage: image });
+    return null;
   },
 });
 
@@ -305,20 +323,33 @@ async function generateDraft(args: {
   };
 }
 
-async function drawLeggyFail(
-  ctx: ActionCtx,
-  draft: LegendDraft,
-): Promise<Id<"_storage"> | undefined> {
-  try {
-    const image = await openaiImage(
-      `A deliberately clumsy, cute cartoon of ${LEGGY}. Leggy tried "${draft.title}" and it went hilariously wrong: ${draft.challenge}. Show the funny failed attempt. Bright, friendly kids' picture-book style, simple shapes, soft colors, no text, safe for young children.`,
-    );
-    return image ? await ctx.storage.store(image) : undefined;
-  } catch (error) {
-    console.warn(`Leggy image failed: ${String(error)}`);
-    return undefined;
-  }
-}
+export const drawLeggyFail = internalAction({
+  args: { legend: v.id("legends") },
+  handler: async (ctx, { legend: legendId }) => {
+    const legend: Doc<"legends"> | null = await ctx.runQuery(internal.legends.getLegend, {
+      legend: legendId,
+    });
+    if (legend === null || !legend.challenge || legend.challengeImage !== undefined) {
+      return null;
+    }
+    try {
+      const image = await openaiImage(
+        `A deliberately clumsy, cute cartoon of ${LEGGY}. Leggy tried "${legend.title}" and it went hilariously wrong: ${legend.challenge}. Show the funny failed attempt. Bright, friendly kids' picture-book style, simple shapes, soft colors, no text, safe for young children.`,
+      );
+      if (image === null) {
+        return null;
+      }
+      const stored = await ctx.storage.store(image);
+      await ctx.runMutation(internal.legends.attachChallengeImage, {
+        legend: legendId,
+        image: stored,
+      });
+    } catch (error) {
+      console.warn(`Leggy image failed: ${String(error)}`);
+    }
+    return null;
+  },
+});
 
 export const todaysLegend = action({
   args: {
@@ -376,8 +407,6 @@ export const todaysLegend = action({
         recent,
         allowChallenge: wantChallenge,
       });
-    const challengeImage = draft.challenge ? await drawLeggyFail(ctx, draft) : undefined;
-
     const legendId: Id<"legends"> = await ctx.runMutation(internal.legends.insertLegend, {
       kid: kid._id,
       day: args.day,
@@ -385,7 +414,6 @@ export const todaysLegend = action({
       category: args.category,
       minutes,
       ...draft,
-      challengeImage,
       rerolled,
     });
     const legend: LegendWithUrls | null = await ctx.runQuery(internal.legends.getWithUrls, {

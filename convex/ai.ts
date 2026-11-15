@@ -1,6 +1,6 @@
 const OPENAI_URL = "https://api.openai.com/v1";
-const TEXT_MODEL = "gpt-6.1-terra";
-const IMAGE_MODEL = "gpt-image-2.5-flare";
+const DEFAULT_TEXT_MODEL = "gpt-6.1-terra";
+const DEFAULT_IMAGE_MODEL = "gpt-image-2.5-flare";
 
 type InputContent =
   | { type: "input_text"; text: string }
@@ -58,7 +58,7 @@ export async function openaiJson(
   const data = await callOpenAI(
     "/responses",
     {
-      model: TEXT_MODEL,
+      model: process.env.OPENAI_TEXT_MODEL || DEFAULT_TEXT_MODEL,
       reasoning: { effort: "low" },
       instructions,
       input,
@@ -84,7 +84,7 @@ export async function openaiText(
   const data = await callOpenAI(
     "/responses",
     {
-      model: TEXT_MODEL,
+      model: process.env.OPENAI_TEXT_MODEL || DEFAULT_TEXT_MODEL,
       reasoning: { effort: "low" },
       instructions,
       input: [{ role: "user", content }],
@@ -97,7 +97,7 @@ export async function openaiText(
 export async function openaiImage(prompt: string): Promise<Blob | null> {
   const data = await callOpenAI(
     "/images/generations",
-    { model: IMAGE_MODEL, prompt, size: "1024x1024", n: 1 },
+    { model: process.env.OPENAI_IMAGE_MODEL || DEFAULT_IMAGE_MODEL, prompt, size: "1024x1024", n: 1 },
     150_000,
   );
   const b64 = (data as { data?: { b64_json?: string }[] } | null)?.data?.[0]?.b64_json;
