@@ -1,12 +1,13 @@
 import { useMutation } from 'convex/react';
 import { router } from 'expo-router';
-import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useRef, useState } from 'react';
+import { ScrollView, type ScrollViewInstance, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Body, Button, Chip, Field, IconButton, Title } from '@/components/ui';
 import { Colors, Fonts, MaxContentWidth, Spacing } from '@/constants/theme';
 import { errorMessage } from '@/lib/errors';
+import { useScrollToEndOnKeyboard } from '@/lib/keyboard';
 import { useKids } from '@/lib/kids';
 import type { KidId } from '@/lib/types';
 import { api } from '../../convex/_generated/api';
@@ -39,6 +40,8 @@ export default function AddKidScreen() {
   const [note, setNote] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const scroll = useRef<ScrollViewInstance>(null);
+  const scrollToEndOnKeyboard = useScrollToEndOnKeyboard(scroll);
 
   function toggle(interest: string) {
     setInterests((list) => (list.includes(interest) ? list.filter((i) => i !== interest) : [...list, interest]));
@@ -76,77 +79,80 @@ export default function AddKidScreen() {
   const customInterests = interests.filter((i) => !INTERESTS.includes(i));
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.screen}>
-      <ScrollView
-        keyboardShouldPersistTaps="handled"
-        contentContainerStyle={[
-          styles.content,
-          { paddingTop: insets.top + Spacing.three, paddingBottom: insets.bottom + Spacing.five },
-        ]}>
-        <View style={styles.top}>
-          <Title>Add a kid</Title>
-          <IconButton icon="close" label="Close" onPress={() => router.back()} />
-        </View>
+    <ScrollView
+      ref={scroll}
+      style={styles.screen}
+      automaticallyAdjustKeyboardInsets
+      keyboardDismissMode="interactive"
+      keyboardShouldPersistTaps="handled"
+      contentContainerStyle={[
+        styles.content,
+        { paddingTop: insets.top + Spacing.three, paddingBottom: insets.bottom + Spacing.five },
+      ]}>
+      <View style={styles.top}>
+        <Title>Add a kid</Title>
+        <IconButton icon="close" label="Close" onPress={() => router.back()} />
+      </View>
 
-        <View style={styles.section}>
-          <Text style={styles.label}>Name</Text>
-          <Field placeholder="Their name" value={name} onChangeText={setName} autoCapitalize="words" />
-        </View>
+      <View style={styles.section}>
+        <Text style={styles.label}>Name</Text>
+        <Field placeholder="Their name" value={name} onChangeText={setName} autoCapitalize="words" />
+      </View>
 
-        <View style={styles.section}>
-          <Text style={styles.label}>Age</Text>
-          <View style={styles.wrap}>
-            {AGES.map((a) => (
-              <Chip key={a} label={String(a)} selected={age === a} onPress={() => setAge(a)} />
-            ))}
-          </View>
+      <View style={styles.section}>
+        <Text style={styles.label}>Age</Text>
+        <View style={styles.wrap}>
+          {AGES.map((a) => (
+            <Chip key={a} label={String(a)} selected={age === a} onPress={() => setAge(a)} />
+          ))}
         </View>
+      </View>
 
-        <View style={styles.section}>
-          <Text style={styles.label}>Loves</Text>
-          <View style={styles.wrap}>
-            {[...INTERESTS, ...customInterests].map((interest) => (
-              <Chip
-                key={interest}
-                label={interest}
-                selected={interests.includes(interest)}
-                onPress={() => toggle(interest)}
-              />
-            ))}
-          </View>
-          <Field
-            placeholder="Something else? Type and press enter"
-            value={custom}
-            onChangeText={setCustom}
-            onSubmitEditing={addCustom}
-            returnKeyType="done"
-            submitBehavior="submit"
-          />
+      <View style={styles.section}>
+        <Text style={styles.label}>Loves</Text>
+        <View style={styles.wrap}>
+          {[...INTERESTS, ...customInterests].map((interest) => (
+            <Chip
+              key={interest}
+              label={interest}
+              selected={interests.includes(interest)}
+              onPress={() => toggle(interest)}
+            />
+          ))}
         </View>
-
-        <View style={styles.section}>
-          <Text style={styles.label}>Anything Leggy should know? (optional)</Text>
-          <Field
-            placeholder="Shy with new people, scared of the dark…"
-            value={note}
-            onChangeText={setNote}
-            autoCapitalize="sentences"
-            autoCorrect
-            multiline
-            style={styles.note}
-          />
-        </View>
-
-        {error !== null && <Body style={styles.error}>{error}</Body>}
-        <Button
-          label="Save"
-          variant="accent"
-          onPress={save}
-          loading={saving}
-          disabled={name.trim().length === 0 || age === null}
+        <Field
+          placeholder="Something else? Type and press enter"
+          value={custom}
+          onChangeText={setCustom}
+          onSubmitEditing={addCustom}
+          returnKeyType="done"
+          submitBehavior="submit"
         />
-      </ScrollView>
-    </KeyboardAvoidingView>
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.label}>Anything Leggy should know? (optional)</Text>
+        <Field
+          placeholder="Shy with new people, scared of the dark…"
+          value={note}
+          onChangeText={setNote}
+          onFocus={scrollToEndOnKeyboard}
+          autoCapitalize="sentences"
+          autoCorrect
+          multiline
+          style={styles.note}
+        />
+      </View>
+
+      {error !== null && <Body style={styles.error}>{error}</Body>}
+      <Button
+        label="Save"
+        variant="accent"
+        onPress={save}
+        loading={saving}
+        disabled={name.trim().length === 0 || age === null}
+      />
+    </ScrollView>
   );
 }
 
