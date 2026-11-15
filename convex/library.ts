@@ -626,6 +626,9 @@ export const LEGGY_REACTIONS = [
   "You're a legend! I'm a Leggy. We make a great team!",
 ];
 
+export const FIRST_CHALLENGE =
+  "I tried this one first. My legs got tangled and I fell over. Can you do better?";
+
 const KINDS_BY_MODE: Record<Mode, Partial<Record<Category, Kind[]>> & { default: Kind[] }> = {
   phone: {
     bedtime: ["story"],

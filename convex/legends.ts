@@ -15,6 +15,7 @@ import { assertDay, previousDay, requireFamilyOf, requireParentOf } from "./kids
 import { levelForXp, xpForMinutes } from "./levels";
 import {
   chooseKindAndSkill,
+  FIRST_CHALLENGE,
   LEGGY_REACTIONS,
   pickFromLibrary,
   rollChallenge,
@@ -381,10 +382,13 @@ export const todaysLegend = action({
 
     const { kid, recent } = plan;
     const yesterday = previousDay(args.day);
-    const wantChallenge = rollChallenge(
-      args.category,
-      recent.some((legend) => legend.day === yesterday && legend.challenge),
-    );
+    const first = recent.length === 0;
+    const wantChallenge =
+      first ||
+      rollChallenge(
+        args.category,
+        recent.some((legend) => legend.day === yesterday && legend.challenge),
+      );
     const { kind, skill } = chooseKindAndSkill(args.mode, args.category, recent);
     const memories = await searchMemories(
       kid._id,
@@ -409,6 +413,9 @@ export const todaysLegend = action({
         recent,
         allowChallenge: wantChallenge,
       });
+    if (first && !draft.challenge) {
+      draft.challenge = FIRST_CHALLENGE;
+    }
     const legendId: Id<"legends"> = await ctx.runMutation(internal.legends.insertLegend, {
       kid: kid._id,
       day: args.day,
