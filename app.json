@@ -1,18 +1,18 @@
 {
   "expo": {
-    "name": "booth",
+    "name": "Little Legends",
     "slug": "booth",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "booth",
-    "userInterfaceStyle": "dark",
+    "userInterfaceStyle": "light",
     "ios": {
       "icon": "./assets/expo.icon"
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#ffffff",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
@@ -28,7 +28,7 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#000000",
+          "backgroundColor": "#ffffff",
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 76
         }
@@ -36,11 +36,23 @@
       "expo-secure-store",
       "expo-asset",
       [
-        "expo-camera",
+        "expo-image-picker",
         {
-          "cameraPermission": "Allow $(PRODUCT_NAME) to use your camera to take photo strips.",
-          "recordAudioAndroid": false,
-          "barcodeScannerEnabled": false
+          "cameraPermission": "Allow $(PRODUCT_NAME) to take photos of your legends.",
+          "photosPermission": "Allow $(PRODUCT_NAME) to pick photos of your legends."
+        }
+      ],
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "Allow $(PRODUCT_NAME) to record what your kid says.",
+          "enableBackgroundPlayback": false
+        }
+      ],
+      [
+        "expo-calendar",
+        {
+          "calendarPermission": "Allow $(PRODUCT_NAME) to find a free 15 minutes in your day."
         }
       ]
     ],
@@ -48,6 +60,6 @@
       "typedRoutes": true,
       "reactCompiler": true
     },
-    "backgroundColor": "#000000"
+    "backgroundColor": "#ffffff"
   }
 }

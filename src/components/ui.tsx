@@ -1,4 +1,5 @@
-import type { ReactNode } from 'react';
+import Ionicons from '@expo/vector-icons/Ionicons';
+import type { ComponentProps, ReactNode } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -6,13 +7,14 @@ import {
   Text,
   TextInput,
   View,
+  type StyleProp,
   type TextInputProps,
   type TextProps,
   type ViewStyle,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Colors, Fonts, MaxContentWidth, Spacing } from '@/constants/theme';
+import { Colors, Fonts, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 
 export function Screen({ children, style }: { children: ReactNode; style?: ViewStyle }) {
   const insets = useSafeAreaInsets();
@@ -36,32 +38,44 @@ export function Button({
   onPress,
   disabled,
   loading,
+  icon,
   variant = 'solid',
 }: {
   label: string;
   onPress: () => void;
   disabled?: boolean;
   loading?: boolean;
-  variant?: 'solid' | 'outline';
+  icon?: ComponentProps<typeof Ionicons>['name'];
+  variant?: 'solid' | 'accent' | 'outline';
 }) {
-  const solid = variant === 'solid';
+  const color = variant === 'solid' ? Colors.white : Colors.black;
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityLabel={label}
       onPress={onPress}
       disabled={disabled || loading}
       style={({ pressed }) => [
         styles.button,
-        solid ? styles.buttonSolid : styles.buttonOutline,
+        styles[variant],
         (pressed || disabled) && styles.dimmed,
       ]}>
       {loading ? (
-        <ActivityIndicator color={solid ? Colors.black : Colors.white} />
+        <ActivityIndicator color={color} />
       ) : (
-        <Text style={[styles.buttonLabel, { color: solid ? Colors.black : Colors.white }]}>
-          {label}
-        </Text>
+        <View style={styles.buttonRow}>
+          {icon !== undefined && <Ionicons name={icon} size={22} color={color} />}
+          <Text style={[styles.buttonLabel, { color }]}>{label}</Text>
+        </View>
       )}
+    </Pressable>
+  );
+}
+
+export function TextButton({ label, onPress }: { label: string; onPress: () => void }) {
+  return (
+    <Pressable accessibilityRole="button" onPress={onPress} hitSlop={12} style={styles.textButton}>
+      <Text style={styles.textButtonLabel}>{label}</Text>
     </Pressable>
   );
 }
@@ -78,10 +92,35 @@ export function Field({ style, ...props }: TextInputProps) {
   );
 }
 
+export function Card({ children, style }: { children: ReactNode; style?: StyleProp<ViewStyle> }) {
+  return <View style={[styles.card, style]}>{children}</View>;
+}
+
+export function Chip({
+  label,
+  selected,
+  onPress,
+}: {
+  label: string;
+  selected?: boolean;
+  onPress?: () => void;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ selected }}
+      onPress={onPress}
+      disabled={onPress === undefined}
+      style={[styles.chip, selected && styles.chipSelected]}>
+      <Text style={styles.chipLabel}>{label}</Text>
+    </Pressable>
+  );
+}
+
 export function Loading() {
   return (
     <View style={styles.center}>
-      <ActivityIndicator color={Colors.white} size="large" />
+      <ActivityIndicator color={Colors.black} size="large" />
     </View>
   );
 }
@@ -89,7 +128,7 @@ export function Loading() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: Colors.black,
+    backgroundColor: Colors.white,
     alignItems: 'center',
   },
   content: {
@@ -99,35 +138,45 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.four,
   },
   title: {
-    color: Colors.white,
+    color: Colors.black,
     fontFamily: Fonts.sans,
-    fontSize: 44,
+    fontSize: 40,
+    lineHeight: 46,
     fontWeight: '900',
     letterSpacing: -1,
   },
   body: {
-    color: Colors.white,
+    color: Colors.black,
     fontFamily: Fonts.sans,
-    fontSize: 20,
+    fontSize: 19,
     lineHeight: 26,
   },
   muted: {
     color: Colors.gray,
   },
   button: {
-    minHeight: 60,
-    borderRadius: 999,
+    minHeight: 62,
+    borderRadius: Radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: Spacing.four,
     borderWidth: 2,
-    borderColor: Colors.white,
+    borderColor: Colors.black,
   },
-  buttonSolid: {
+  solid: {
+    backgroundColor: Colors.black,
+  },
+  accent: {
+    backgroundColor: Colors.green,
+    borderColor: Colors.green,
+  },
+  outline: {
     backgroundColor: Colors.white,
   },
-  buttonOutline: {
-    backgroundColor: Colors.black,
+  buttonRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
   },
   buttonLabel: {
     fontFamily: Fonts.sans,
@@ -137,20 +186,58 @@ const styles = StyleSheet.create({
   dimmed: {
     opacity: 0.5,
   },
+  textButton: {
+    alignSelf: 'center',
+    paddingVertical: Spacing.two,
+  },
+  textButtonLabel: {
+    color: Colors.gray,
+    fontFamily: Fonts.sans,
+    fontSize: 17,
+    fontWeight: '600',
+    textDecorationLine: 'underline',
+  },
   field: {
     minHeight: 60,
     borderWidth: 2,
-    borderColor: Colors.white,
-    borderRadius: 16,
+    borderColor: Colors.black,
+    borderRadius: 18,
     paddingHorizontal: Spacing.three,
-    color: Colors.white,
+    color: Colors.black,
+    backgroundColor: Colors.white,
     fontFamily: Fonts.sans,
     fontSize: 20,
+  },
+  card: {
+    borderRadius: Radius.card,
+    borderWidth: 2,
+    borderColor: Colors.black,
+    backgroundColor: Colors.white,
+    padding: Spacing.four,
+    gap: Spacing.three,
+  },
+  chip: {
+    borderWidth: 2,
+    borderColor: Colors.black,
+    borderRadius: Radius.pill,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.two,
+    backgroundColor: Colors.white,
+  },
+  chipSelected: {
+    backgroundColor: Colors.green,
+    borderColor: Colors.green,
+  },
+  chipLabel: {
+    color: Colors.black,
+    fontFamily: Fonts.sans,
+    fontSize: 17,
+    fontWeight: '700',
   },
   center: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: Colors.black,
+    backgroundColor: Colors.white,
   },
 });

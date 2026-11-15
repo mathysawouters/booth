@@ -5,6 +5,7 @@ import {
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { Leggy } from '@/components/leggy';
 import { Body, Button, Field, Screen, Title } from '@/components/ui';
 import { Colors, Spacing } from '@/constants/theme';
 import { api } from '../../convex/_generated/api';
@@ -64,8 +65,9 @@ export default function SignInScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.container}>
         <View style={styles.hero}>
-          <Text style={styles.wordmark}>BOOTH</Text>
-          <Body muted>Four photos a day. Only for friends.</Body>
+          <Leggy size={96} />
+          <Text style={styles.wordmark}>Little Legends</Text>
+          <Body muted>One fun thing with your kid, every day.</Body>
         </View>
 
         <View style={styles.form}>
@@ -124,10 +126,11 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
   },
   wordmark: {
-    color: Colors.white,
-    fontSize: 80,
+    color: Colors.black,
+    fontSize: 52,
+    lineHeight: 56,
     fontWeight: '900',
-    letterSpacing: -4,
+    letterSpacing: -2,
   },
   heading: {
     fontSize: 32,
