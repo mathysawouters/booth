@@ -8,10 +8,16 @@
  * @module
  */
 
+import type * as ai from "../ai.js";
 import type * as auth from "../auth.js";
+import type * as family from "../family.js";
+import type * as files from "../files.js";
 import type * as friends from "../friends.js";
-import type * as reactions from "../reactions.js";
-import type * as strips from "../strips.js";
+import type * as kids from "../kids.js";
+import type * as legends from "../legends.js";
+import type * as levels from "../levels.js";
+import type * as library from "../library.js";
+import type * as memory from "../memory.js";
 import type * as users from "../users.js";
 
 import type {
@@ -21,10 +27,16 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  ai: typeof ai;
   auth: typeof auth;
+  family: typeof family;
+  files: typeof files;
   friends: typeof friends;
-  reactions: typeof reactions;
-  strips: typeof strips;
+  kids: typeof kids;
+  legends: typeof legends;
+  levels: typeof levels;
+  library: typeof library;
+  memory: typeof memory;
   users: typeof users;
 }>;
 
