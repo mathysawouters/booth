@@ -6,7 +6,7 @@ import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { LeggySays } from '@/components/leggy';
@@ -150,53 +150,56 @@ export default function DoneScreen() {
   }
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.screen}>
-      <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={[styles.content, padding]}>
-        <View style={styles.top}>
-          <Title style={styles.flex}>We did it!</Title>
-          <IconButton icon="close" label="Close" onPress={() => router.back()} />
-        </View>
-        <Body muted>{legend.title}</Body>
+    <ScrollView
+      style={styles.screen}
+      automaticallyAdjustKeyboardInsets
+      keyboardDismissMode="interactive"
+      keyboardShouldPersistTaps="handled"
+      contentContainerStyle={[styles.content, padding]}>
+      <View style={styles.top}>
+        <Title style={styles.flex}>We did it!</Title>
+        <IconButton icon="close" label="Close" onPress={() => router.back()} />
+      </View>
+      <Body muted>{legend.title}</Body>
 
-        <Text style={styles.label}>Snap a photo</Text>
-        {photo !== null ? (
-          <Image source={{ uri: photo }} style={styles.preview} contentFit="cover" />
+      <Text style={styles.label}>Snap a photo</Text>
+      {photo !== null ? (
+        <Image source={{ uri: photo }} style={styles.preview} contentFit="cover" />
+      ) : (
+        <View style={[styles.preview, styles.empty]}>
+          <Ionicons name="camera" size={48} color={Colors.gray} />
+        </View>
+      )}
+      <View style={styles.row}>
+        {HAS_CAMERA ? (
+          <View style={styles.flex}>
+            <Button label="Camera" icon="camera" variant="soft" onPress={takePhoto} />
+          </View>
         ) : (
-          <View style={[styles.preview, styles.empty]}>
-            <Ionicons name="camera" size={48} color={Colors.gray} />
+          <View style={styles.flex}>
+            <Button label="Sample" icon="image" variant="soft" onPress={samplePhoto} />
           </View>
         )}
-        <View style={styles.row}>
-          {HAS_CAMERA ? (
-            <View style={styles.flex}>
-              <Button label="Camera" icon="camera" variant="soft" onPress={takePhoto} />
-            </View>
-          ) : (
-            <View style={styles.flex}>
-              <Button label="Sample" icon="image" variant="soft" onPress={samplePhoto} />
-            </View>
-          )}
-          <View style={styles.flex}>
-            <Button label="Library" icon="images" variant="soft" onPress={pickPhoto} />
-          </View>
+        <View style={styles.flex}>
+          <Button label="Library" icon="images" variant="soft" onPress={pickPhoto} />
         </View>
+      </View>
 
-        <Text style={styles.label}>What did {name} say?</Text>
-        <Field
-          placeholder="“Again! Again!”"
-          value={quote}
-          onChangeText={setQuote}
-          autoCapitalize="sentences"
-          autoCorrect
-          multiline
-          style={styles.quoteField}
-        />
-        <VoiceClip uri={voice} onChange={setVoice} />
+      <Text style={styles.label}>What did {name} say?</Text>
+      <Field
+        placeholder="“Again! Again!”"
+        value={quote}
+        onChangeText={setQuote}
+        autoCapitalize="sentences"
+        autoCorrect
+        multiline
+        style={styles.quoteField}
+      />
+      <VoiceClip uri={voice} onChange={setVoice} />
 
-        {error !== null && <Body style={styles.error}>{error}</Body>}
-        <Button label="Save the legend" icon="checkmark-circle" variant="accent" onPress={() => save(legend)} />
-      </ScrollView>
-    </KeyboardAvoidingView>
+      {error !== null && <Body style={styles.error}>{error}</Body>}
+      <Button label="Save the legend" icon="checkmark-circle" variant="accent" onPress={() => save(legend)} />
+    </ScrollView>
   );
 }
 
