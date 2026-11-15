@@ -49,13 +49,13 @@ export const KINDS: Record<LegendKind, { label: string; icon: IconName }> = {
   sound: { label: 'Sound', icon: 'musical-note' },
 };
 
-export const SKILLS: Record<SkillName, { label: string; icon: IconName }> = {
-  brave: { label: 'Brave', icon: 'shield-checkmark' },
-  kind: { label: 'Kind', icon: 'heart' },
-  curious: { label: 'Curious', icon: 'search' },
-  money: { label: 'Money', icon: 'cash' },
-  helper: { label: 'Helper', icon: 'hand-left' },
-  reader: { label: 'Reader', icon: 'library' },
+export const SKILLS: Record<SkillName, { label: string; icon: IconName; growing: string }> = {
+  brave: { label: 'Brave', icon: 'shield-checkmark', growing: 'braver' },
+  kind: { label: 'Kind', icon: 'heart', growing: 'kinder' },
+  curious: { label: 'Curious', icon: 'search', growing: 'more curious' },
+  money: { label: 'Money', icon: 'cash', growing: 'smarter with money' },
+  helper: { label: 'Helper', icon: 'hand-left', growing: 'more helpful' },
+  reader: { label: 'Reader', icon: 'library', growing: 'a stronger reader' },
 };
 
 export const WAITING_LINES = [
