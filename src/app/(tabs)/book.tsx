@@ -9,7 +9,7 @@ import { LeggySays } from '@/components/leggy';
 import { Card, Loading, Title } from '@/components/ui';
 import { BottomTabInset, Colors, Fonts, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { formatDay } from '@/lib/day';
-import { SKILLS } from '@/lib/legends';
+import { CATEGORY_ART, SKILLS } from '@/lib/legends';
 import { useKids } from '@/lib/kids';
 import type { Legend } from '@/lib/types';
 import { api } from '../../../convex/_generated/api';
@@ -41,22 +41,26 @@ export default function BookScreen() {
         </View>
       }
       ListEmptyComponent={
-        <LeggySays>
+        <LeggySays pose="waving">
           {kid === null
             ? 'Add your kid on Today and your legends will land here.'
             : `Finish your first legend with ${kid.name} and it lands right here.`}
         </LeggySays>
       }
-      renderItem={({ item }) => <Page legend={item} />}
+      renderItem={({ item, index }) => <Page legend={item} tilt={index % 2 === 0 ? '-1deg' : '1deg'} />}
     />
   );
 }
 
-function Page({ legend }: { legend: Legend }) {
+function Page({ legend, tilt }: { legend: Legend; tilt: string }) {
   return (
-    <Card style={styles.card}>
-      <View style={styles.meta}>
-        <Text style={styles.day}>{formatDay(legend.day)}</Text>
+    <Card style={[styles.card, { transform: [{ rotate: tilt }] }]}>
+      <View style={styles.frame}>
+        {legend.photoUrl !== null ? (
+          <Image source={{ uri: legend.photoUrl }} style={styles.photo} contentFit="cover" transition={200} />
+        ) : (
+          <Image source={CATEGORY_ART[legend.category]} style={styles.photo} contentFit="contain" />
+        )}
         {legend.levelUp !== undefined && (
           <View style={styles.badge}>
             <Ionicons name={SKILLS[legend.skill].icon} size={14} color={Colors.black} />
@@ -66,11 +70,12 @@ function Page({ legend }: { legend: Legend }) {
           </View>
         )}
       </View>
-      {legend.photoUrl !== null && (
-        <Image source={{ uri: legend.photoUrl }} style={styles.photo} contentFit="cover" />
-      )}
-      <Text style={styles.title}>{legend.title}</Text>
-      {legend.quote !== undefined && legend.quote.length > 0 && <Text style={styles.quote}>“{legend.quote}”</Text>}
+      <View style={styles.tape} />
+      <View style={styles.caption}>
+        <Text style={styles.day}>{formatDay(legend.day)}</Text>
+        <Text style={styles.title}>{legend.title}</Text>
+        {legend.quote !== undefined && legend.quote.length > 0 && <Text style={styles.quote}>“{legend.quote}”</Text>}
+      </View>
     </Card>
   );
 }
@@ -91,57 +96,69 @@ const styles = StyleSheet.create({
     gap: Spacing.three,
   },
   card: {
-    padding: Spacing.three,
+    padding: 12,
+    gap: 0,
   },
-  meta: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: Spacing.one,
+  frame: {
+    borderRadius: Radius.field,
+    backgroundColor: Colors.soft,
+    overflow: 'hidden',
   },
-  day: {
-    color: Colors.gray,
-    fontFamily: Fonts.sans,
-    fontSize: 16,
-    fontWeight: '800',
-    textTransform: 'uppercase',
-    letterSpacing: 1,
+  photo: {
+    width: '100%',
+    aspectRatio: 4 / 3,
+  },
+  tape: {
+    position: 'absolute',
+    top: 2,
+    alignSelf: 'center',
+    width: 92,
+    height: 24,
+    borderRadius: 4,
+    backgroundColor: Colors.green,
+    opacity: 0.7,
+    transform: [{ rotate: '-3deg' }],
   },
   badge: {
+    position: 'absolute',
+    right: 12,
+    bottom: 12,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
     backgroundColor: Colors.green,
     borderRadius: Radius.pill,
     paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingVertical: 5,
   },
   badgeText: {
     color: Colors.black,
-    fontFamily: Fonts.sans,
-    fontSize: 14,
-    fontWeight: '900',
+    fontFamily: Fonts.sansHeavy,
+    fontSize: 13,
   },
-  photo: {
-    width: '100%',
-    aspectRatio: 4 / 3,
-    borderRadius: Radius.tile,
-    backgroundColor: Colors.soft,
+  caption: {
+    gap: 6,
+    paddingHorizontal: Spacing.two,
+    paddingTop: Spacing.three,
+    paddingBottom: Spacing.two,
+  },
+  day: {
+    color: Colors.gray,
+    fontFamily: Fonts.sansHeavy,
+    fontSize: 13,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
   title: {
     color: Colors.black,
-    fontFamily: Fonts.sans,
+    fontFamily: Fonts.display,
     fontSize: 24,
     lineHeight: 30,
-    fontWeight: '900',
-    paddingHorizontal: Spacing.one,
   },
   quote: {
     color: Colors.black,
-    fontFamily: Fonts.serif,
-    fontSize: 21,
-    lineHeight: 29,
-    fontStyle: 'italic',
-    paddingHorizontal: Spacing.one,
+    fontFamily: Fonts.serifItalic,
+    fontSize: 18,
+    lineHeight: 27,
   },
 });

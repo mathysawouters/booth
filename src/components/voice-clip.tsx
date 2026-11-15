@@ -8,9 +8,9 @@ import {
   useAudioRecorderState,
 } from 'expo-audio';
 import { useEffect, useRef, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
-import { Body } from '@/components/ui';
+import { Body, Tappable } from '@/components/ui';
 import { Colors, Fonts, Radius, Spacing } from '@/constants/theme';
 
 const MAX_SECONDS = 10;
@@ -54,30 +54,29 @@ export function VoiceClip({ uri, onChange }: { uri: string | null; onChange: (ur
     <View style={styles.container}>
       <View style={styles.row}>
         {state.isRecording ? (
-          <Pressable accessibilityRole="button" onPress={() => recorder.stop()} style={[styles.button, styles.recording]}>
+          <Tappable onPress={() => recorder.stop()} style={[styles.button, styles.recording]}>
             <Ionicons name="stop" size={22} color={Colors.white} />
             <Text style={[styles.label, styles.labelLight]}>
               Stop · {MAX_SECONDS - seconds}s left
             </Text>
-          </Pressable>
+          </Tappable>
         ) : (
-          <Pressable accessibilityRole="button" onPress={start} style={styles.button}>
+          <Tappable onPress={start} style={styles.button}>
             <Ionicons name="mic" size={22} color={Colors.black} />
             <Text style={styles.label}>{uri === null ? 'Record 10 seconds' : 'Record again'}</Text>
-          </Pressable>
+          </Tappable>
         )}
         {uri !== null && !state.isRecording && (
           <>
-            <Pressable accessibilityRole="button" accessibilityLabel="Play clip" onPress={play} style={styles.round}>
+            <Tappable accessibilityLabel="Play clip" onPress={play} style={styles.round}>
               <Ionicons name="play" size={22} color={Colors.black} />
-            </Pressable>
-            <Pressable
-              accessibilityRole="button"
+            </Tappable>
+            <Tappable
               accessibilityLabel="Delete clip"
               onPress={() => onChange(null)}
               style={styles.round}>
               <Ionicons name="trash" size={20} color={Colors.black} />
-            </Pressable>
+            </Tappable>
           </>
         )}
       </View>
@@ -102,8 +101,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: Spacing.two,
-    borderWidth: 2,
-    borderColor: Colors.black,
+    backgroundColor: Colors.soft,
     borderRadius: Radius.pill,
   },
   recording: {
@@ -111,9 +109,8 @@ const styles = StyleSheet.create({
   },
   label: {
     color: Colors.black,
-    fontFamily: Fonts.sans,
-    fontSize: 17,
-    fontWeight: '800',
+    fontFamily: Fonts.sansBold,
+    fontSize: 16,
   },
   labelLight: {
     color: Colors.white,
@@ -122,8 +119,7 @@ const styles = StyleSheet.create({
     width: 54,
     height: 54,
     borderRadius: 27,
-    borderWidth: 2,
-    borderColor: Colors.black,
+    backgroundColor: Colors.soft,
     alignItems: 'center',
     justifyContent: 'center',
   },

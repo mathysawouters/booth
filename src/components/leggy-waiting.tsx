@@ -15,7 +15,7 @@ export function LeggyWaiting({ lines = WAITING_LINES }: { lines?: string[] }) {
 
   return (
     <View style={styles.center}>
-      <Leggy size={170} mood="thinking" />
+      <Leggy size={240} pose="thinking" />
       <Text style={styles.line}>{lines[index]}</Text>
     </View>
   );
@@ -27,15 +27,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: Spacing.four,
-    padding: Spacing.four,
+    padding: Spacing.five,
     backgroundColor: Colors.white,
   },
   line: {
     color: Colors.black,
-    fontFamily: Fonts.sans,
+    fontFamily: Fonts.display,
     fontSize: 24,
     lineHeight: 32,
-    fontWeight: '800',
     textAlign: 'center',
   },
 });

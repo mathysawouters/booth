@@ -4,6 +4,9 @@
   "main": "expo-router/entry",
   "dependencies": {
     "@convex-dev/auth": "^2.0.0",
+    "@expo-google-fonts/fredoka": "^0.4.1",
+    "@expo-google-fonts/literata": "^0.4.3",
+    "@expo-google-fonts/nunito": "^0.4.2",
     "@expo/ui": "~58.0.28",
     "@expo/vector-icons": "^15.0.2",
     "convex": "^1.50.0",

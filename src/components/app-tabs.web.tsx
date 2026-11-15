@@ -9,7 +9,7 @@ import {
 import type { ComponentRef, Ref } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { Colors, MaxContentWidth, Spacing } from '@/constants/theme';
+import { Colors, Fonts, MaxContentWidth, Spacing } from '@/constants/theme';
 
 export default function AppTabs() {
   return (
@@ -74,24 +74,22 @@ const styles = StyleSheet.create({
   },
   brand: {
     color: Colors.black,
-    fontSize: 22,
-    fontWeight: '900',
+    fontFamily: Fonts.displayBold,
+    fontSize: 20,
     marginRight: 'auto',
   },
   tab: {
     paddingVertical: Spacing.two,
     paddingHorizontal: Spacing.three,
     borderRadius: 999,
-    borderWidth: 2,
-    borderColor: Colors.white,
   },
   tabFocused: {
-    borderColor: Colors.black,
+    backgroundColor: Colors.greenSoft,
   },
   tabLabel: {
     color: Colors.gray,
-    fontSize: 18,
-    fontWeight: '700',
+    fontFamily: Fonts.sansBold,
+    fontSize: 16,
   },
   tabLabelFocused: {
     color: Colors.black,
