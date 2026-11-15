@@ -1,12 +1,13 @@
 import { ConvexAuthProvider, type TokenStorage } from '@convex-dev/auth/react';
-import { ConvexReactClient } from 'convex/react';
-import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
+import { ConvexReactClient, useConvexAuth } from 'convex/react';
+import { DarkTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import * as SplashScreen from 'expo-splash-screen';
-import { Platform, useColorScheme } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
+import { useEffect } from 'react';
+import { Platform } from 'react-native';
 
-import { AnimatedSplashOverlay } from '@/components/animated-icon';
-import AppTabs from '@/components/app-tabs';
+import { Colors } from '@/constants/theme';
 import { api } from '../../convex/_generated/api';
 
 SplashScreen.preventAutoHideAsync();
@@ -21,8 +22,12 @@ const secureStorage: TokenStorage = {
   removeItem: SecureStore.deleteItemAsync,
 };
 
-export default function TabLayout() {
-  const colorScheme = useColorScheme();
+const theme = {
+  ...DarkTheme,
+  colors: { ...DarkTheme.colors, background: Colors.black, card: Colors.black, primary: Colors.white },
+};
+
+export default function RootLayout() {
   return (
     <ConvexAuthProvider
       client={convex}
@@ -33,10 +38,36 @@ export default function TabLayout() {
       }}
       storage={Platform.OS === 'web' ? undefined : secureStorage}
       ambientSignIns={[]}>
-      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-        <AnimatedSplashOverlay />
-        <AppTabs />
+      <ThemeProvider value={theme}>
+        <StatusBar style="light" />
+        <RootNavigator />
       </ThemeProvider>
     </ConvexAuthProvider>
+  );
+}
+
+function RootNavigator() {
+  const { isLoading, isAuthenticated } = useConvexAuth();
+
+  useEffect(() => {
+    if (!isLoading) {
+      SplashScreen.hideAsync();
+    }
+  }, [isLoading]);
+
+  if (isLoading) {
+    return null;
+  }
+
+  return (
+    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: Colors.black } }}>
+      <Stack.Protected guard={isAuthenticated}>
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="booth" options={{ presentation: 'fullScreenModal', animation: 'slide_from_bottom' }} />
+      </Stack.Protected>
+      <Stack.Protected guard={!isAuthenticated}>
+        <Stack.Screen name="sign-in" />
+      </Stack.Protected>
+    </Stack>
   );
 }

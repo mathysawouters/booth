@@ -7,6 +7,8 @@
     "@expo/ui": "~58.0.28",
     "convex": "^1.50.0",
     "expo": "~58.0.25",
+    "expo-asset": "~58.0.21",
+    "expo-camera": "~58.0.14",
     "expo-constants": "~58.0.16",
     "expo-device": "~58.0.5",
     "expo-font": "~58.0.12",
@@ -38,7 +40,6 @@
   },
   "scripts": {
     "start": "expo start",
-    "reset-project": "node ./scripts/reset-project.js",
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
