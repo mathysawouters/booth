@@ -10,13 +10,13 @@ import Animated, {
 
 import { Colors } from '@/constants/theme';
 
-const PIECES = Array.from({ length: 48 }, (_, i) => ({
+const PIECES = Array.from({ length: 54 }, (_, i) => ({
   x: (i * 37) % 100,
   drift: ((i * 53) % 60) - 30,
   delay: (i * 71) % 900,
   spin: ((i * 29) % 4) + 2,
   size: 8 + ((i * 13) % 8),
-  color: [Colors.black, Colors.white, Colors.black, Colors.white][i % 4],
+  color: [Colors.white, Colors.black, Colors.greenDeep, Colors.white, Colors.greenSoft, Colors.black][i % 6],
   round: i % 3 === 0,
 }));
 
@@ -35,15 +35,15 @@ function Piece({ x, drift, delay, spin, size, color, round }: (typeof PIECES)[nu
   const progress = useSharedValue(0);
 
   useEffect(() => {
-    progress.value = withDelay(delay, withTiming(1, { duration: 2600, easing: Easing.in(Easing.quad) }));
+    progress.set(withDelay(delay, withTiming(1, { duration: 2800, easing: Easing.in(Easing.quad) })));
   }, [delay, progress]);
 
   const style = useAnimatedStyle(() => ({
-    opacity: 1 - progress.value * 0.3,
+    opacity: 1 - progress.get() * 0.3,
     transform: [
-      { translateX: (x / 100) * width + drift * progress.value * 3 },
-      { translateY: -40 + progress.value * (height + 80) },
-      { rotate: `${progress.value * 360 * spin}deg` },
+      { translateX: (x / 100) * width + drift * progress.get() * 3 },
+      { translateY: -40 + progress.get() * (height + 80) },
+      { rotate: `${progress.get() * 360 * spin}deg` },
     ],
   }));
 
@@ -51,7 +51,7 @@ function Piece({ x, drift, delay, spin, size, color, round }: (typeof PIECES)[nu
     <Animated.View
       style={[
         styles.piece,
-        { width: size, height: round ? size : size * 1.6, borderRadius: round ? size / 2 : 2, backgroundColor: color },
+        { width: size, height: round ? size : size * 1.6, borderRadius: round ? size / 2 : 3, backgroundColor: color },
         style,
       ]}
     />

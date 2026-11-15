@@ -1,11 +1,11 @@
-import Ionicons from '@expo/vector-icons/Ionicons';
 import { useQuery } from 'convex/react';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Button, Loading } from '@/components/ui';
+import { Leggy } from '@/components/leggy';
+import { Button, IconButton, Loading } from '@/components/ui';
 import { Colors, Fonts, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import type { KidId, Legend } from '@/lib/types';
 import { api } from '../../convex/_generated/api';
@@ -23,7 +23,7 @@ export default function StoryScreen() {
     return (
       <View style={[styles.screen, styles.empty]}>
         <Text style={styles.text}>No story today yet.</Text>
-        <Button label="Close" variant="outline" onPress={() => router.back()} />
+        <Button label="Close" variant="soft" onPress={() => router.back()} />
       </View>
     );
   }
@@ -37,19 +37,28 @@ export default function StoryScreen() {
   return (
     <View style={[styles.screen, { paddingTop: insets.top + Spacing.two, paddingBottom: insets.bottom + Spacing.three }]}>
       <View style={styles.top}>
-        <Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={() => router.back()} hitSlop={16}>
-          <Ionicons name="close" size={32} color={Colors.black} />
-        </Pressable>
+        <IconButton icon="close" label="Close" onPress={() => router.back()} />
+        <View style={styles.track}>
+          <View style={[styles.fill, { width: `${(Math.min(page + 1, total) / Math.max(total, 1)) * 100}%` }]} />
+        </View>
         <Text style={styles.counter}>
           {Math.min(page + 1, total)} / {total}
         </Text>
       </View>
 
-      <ScrollView contentContainerStyle={styles.page}>
-        {page === 0 && <Text style={styles.title}>{legend.title}</Text>}
+      <ScrollView contentContainerStyle={styles.page} showsVerticalScrollIndicator={false}>
+        {page === 0 && (
+          <View style={styles.cover}>
+            <Leggy size={132} pose="reading" />
+            <Text style={styles.title}>{legend.title}</Text>
+          </View>
+        )}
         {onQuestion ? (
           <View style={styles.question}>
-            <Text style={styles.questionLabel}>Ask together</Text>
+            <View style={styles.questionHead}>
+              <Leggy size={72} pose={legend.category === 'bedtime' ? 'sleeping' : 'reading'} />
+              <Text style={styles.questionLabel}>Ask together</Text>
+            </View>
             <Text style={styles.text}>{legend.question}</Text>
           </View>
         ) : (
@@ -68,7 +77,7 @@ export default function StoryScreen() {
         ) : (
           <Button label="Next page" icon="arrow-forward" onPress={() => setPage(page + 1)} />
         )}
-        {page > 0 && <Button label="Back" variant="outline" onPress={() => setPage(page - 1)} />}
+        {page > 0 && <Button label="Back" variant="soft" onPress={() => setPage(page - 1)} />}
       </View>
     </View>
   );
@@ -89,50 +98,70 @@ const styles = StyleSheet.create({
   },
   top: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    gap: Spacing.three,
+  },
+  track: {
+    flex: 1,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: Colors.soft,
+    overflow: 'hidden',
+  },
+  fill: {
+    height: '100%',
+    borderRadius: 4,
+    backgroundColor: Colors.green,
   },
   counter: {
     color: Colors.gray,
-    fontFamily: Fonts.sans,
-    fontSize: 18,
-    fontWeight: '800',
+    fontFamily: Fonts.sansBold,
+    fontSize: 15,
     fontVariant: ['tabular-nums'],
   },
   page: {
     flexGrow: 1,
     justifyContent: 'center',
     gap: Spacing.four,
-    paddingVertical: Spacing.five,
+    paddingVertical: Spacing.four,
+  },
+  cover: {
+    alignItems: 'center',
+    gap: Spacing.three,
   },
   title: {
-    color: Colors.green,
-    fontFamily: Fonts.serif,
-    fontSize: 26,
-    fontWeight: '700',
+    color: Colors.black,
+    fontFamily: Fonts.displayBold,
+    fontSize: 30,
+    lineHeight: 36,
+    textAlign: 'center',
   },
   text: {
     color: Colors.black,
     fontFamily: Fonts.serif,
-    fontSize: 32,
-    lineHeight: 46,
+    fontSize: 25,
+    lineHeight: 40,
   },
   question: {
     gap: Spacing.three,
-    borderWidth: 2,
-    borderColor: Colors.green,
+    backgroundColor: Colors.greenSoft,
     borderRadius: Radius.card,
     padding: Spacing.four,
   },
+  questionHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.three,
+  },
   questionLabel: {
-    color: Colors.green,
-    fontFamily: Fonts.sans,
-    fontSize: 18,
-    fontWeight: '900',
+    color: Colors.greenDeep,
+    fontFamily: Fonts.sansHeavy,
+    fontSize: 15,
     textTransform: 'uppercase',
-    letterSpacing: 1,
+    letterSpacing: 1.5,
   },
   actions: {
     gap: Spacing.three,
+    paddingTop: Spacing.two,
   },
 });

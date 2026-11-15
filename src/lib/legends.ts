@@ -5,17 +5,30 @@ import type { Category, LegendKind, SkillName } from '@/lib/types';
 
 type IconName = ComponentProps<typeof Ionicons>['name'];
 
-export const CATEGORIES: { id: Category; label: string; icon: IconName }[] = [
-  { id: 'bedtime', label: 'Bedtime', icon: 'moon' },
-  { id: 'build', label: 'Build', icon: 'construct' },
-  { id: 'story', label: 'Story', icon: 'book' },
-  { id: 'outside', label: 'Outside', icon: 'leaf' },
-  { id: 'kitchen', label: 'Kitchen', icon: 'restaurant' },
-  { id: 'art', label: 'Art', icon: 'color-palette' },
-  { id: 'music', label: 'Music', icon: 'musical-notes' },
-  { id: 'skills', label: 'Skills', icon: 'trophy' },
-  { id: 'calm', label: 'Calm', icon: 'water' },
-  { id: 'surprise', label: 'Surprise me', icon: 'gift' },
+export const CATEGORY_ART: Record<Category, number> = {
+  bedtime: require('@/assets/illustrations/category-bedtime.png'),
+  build: require('@/assets/illustrations/category-build.png'),
+  story: require('@/assets/illustrations/category-story.png'),
+  outside: require('@/assets/illustrations/category-outside.png'),
+  kitchen: require('@/assets/illustrations/category-kitchen.png'),
+  art: require('@/assets/illustrations/category-art.png'),
+  music: require('@/assets/illustrations/category-music.png'),
+  skills: require('@/assets/illustrations/category-skills.png'),
+  calm: require('@/assets/illustrations/category-calm.png'),
+  surprise: require('@/assets/illustrations/category-surprise.png'),
+};
+
+export const CATEGORIES: { id: Category; label: string }[] = [
+  { id: 'bedtime', label: 'Bedtime' },
+  { id: 'build', label: 'Build' },
+  { id: 'story', label: 'Story' },
+  { id: 'outside', label: 'Outside' },
+  { id: 'kitchen', label: 'Kitchen' },
+  { id: 'art', label: 'Art' },
+  { id: 'music', label: 'Music' },
+  { id: 'skills', label: 'Skills' },
+  { id: 'calm', label: 'Calm' },
+  { id: 'surprise', label: 'Surprise me' },
 ];
 
 export function orderedCategories(now: Date) {

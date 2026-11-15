@@ -43,9 +43,8 @@ export function SkillPanel({ kid, name, highlight }: { kid: KidId; name: string;
 const styles = StyleSheet.create({
   heading: {
     color: Colors.black,
-    fontFamily: Fonts.sans,
-    fontSize: 24,
-    fontWeight: '900',
+    fontFamily: Fonts.display,
+    fontSize: 22,
   },
   row: {
     flexDirection: 'row',
@@ -56,14 +55,12 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    borderWidth: 2,
-    borderColor: Colors.black,
+    backgroundColor: Colors.soft,
     alignItems: 'center',
     justifyContent: 'center',
   },
   iconActive: {
     backgroundColor: Colors.green,
-    borderColor: Colors.green,
   },
   info: {
     flex: 1,
@@ -75,15 +72,13 @@ const styles = StyleSheet.create({
   },
   name: {
     color: Colors.black,
-    fontFamily: Fonts.sans,
-    fontSize: 17,
-    fontWeight: '800',
+    fontFamily: Fonts.sansBold,
+    fontSize: 16,
   },
   level: {
     color: Colors.gray,
-    fontFamily: Fonts.sans,
-    fontSize: 15,
-    fontWeight: '700',
+    fontFamily: Fonts.sansSemi,
+    fontSize: 14,
   },
   track: {
     height: 10,

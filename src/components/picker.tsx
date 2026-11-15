@@ -1,21 +1,20 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { Image } from 'expo-image';
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
-import { Body, Button, Card, TextButton, Title } from '@/components/ui';
-import { Colors, Fonts, Radius, Spacing } from '@/constants/theme';
+import { Body, Tappable, TextButton } from '@/components/ui';
+import { Colors, Fonts, Radius, Shadow, Spacing } from '@/constants/theme';
 import { formatTime } from '@/lib/day';
 import { findFreeSlot, type Slot } from '@/lib/free-slot';
-import { orderedCategories } from '@/lib/legends';
+import { CATEGORY_ART, orderedCategories } from '@/lib/legends';
 import type { Category, Mode } from '@/lib/types';
 
 export function Picker({
-  streak,
   doneToday,
   onBack,
   onPick,
 }: {
-  streak: number | undefined;
   doneToday: boolean;
   onBack?: () => void;
   onPick: (choice: { mode: Mode; category: Category; minutes: number }) => void;
@@ -43,24 +42,14 @@ export function Picker({
 
   return (
     <View style={styles.container}>
-      <View style={styles.streak}>
-        <Ionicons name="flame" size={26} color={Colors.green} />
-        <Text style={styles.streakText}>
-          {streak === undefined
-            ? ' '
-            : streak === 0
-              ? 'Start a streak today'
-              : `${streak} ${streak === 1 ? 'day' : 'days'} in a row`}
-        </Text>
-      </View>
-
       {doneToday && (
-        <Card style={styles.doneCard}>
-          <Body style={styles.bold}>Today&apos;s legend is done. Up for another one?</Body>
-        </Card>
+        <View style={styles.note}>
+          <Ionicons name="checkmark-circle" size={24} color={Colors.greenDeep} />
+          <Body style={styles.noteText}>Today&apos;s legend is done. Up for another one?</Body>
+        </View>
       )}
 
-      <Title>What do you want to do?</Title>
+      <Text style={styles.heading}>What do you want to do?</Text>
 
       <View style={styles.switch}>
         {(
@@ -71,46 +60,49 @@ export function Picker({
         ).map((option) => {
           const active = mode === option.id;
           return (
-            <Pressable
+            <Tappable
               key={option.id}
-              accessibilityRole="button"
               accessibilityState={{ selected: active }}
               onPress={() => setMode(option.id)}
               style={[styles.switchHalf, active && styles.switchActive]}>
-              <Ionicons name={option.icon} size={26} color={active ? Colors.white : Colors.black} />
+              <Ionicons name={option.icon} size={20} color={active ? Colors.black : Colors.gray} />
               <Text style={[styles.switchLabel, active && styles.switchLabelActive]}>{option.label}</Text>
-            </Pressable>
+            </Tappable>
           );
         })}
       </View>
 
-      <Button label="Find my 15 minutes" icon="calendar" variant="outline" onPress={find} loading={finding} />
+      <Tappable accessibilityLabel="Find my 15 minutes" onPress={find} disabled={finding} style={styles.find}>
+        {finding ? (
+          <ActivityIndicator color={Colors.black} />
+        ) : (
+          <>
+            <Ionicons name="calendar-outline" size={18} color={Colors.black} />
+            <Text style={styles.findLabel}>Find my 15 minutes</Text>
+          </>
+        )}
+      </Tappable>
       {slot !== null && (
-        <Card style={styles.slot}>
+        <View style={styles.slot}>
           <Text style={styles.slotTitle}>
             {slot.note === null ? `Free at ${formatTime(slot.start)}` : 'Right now'} · {slot.minutes} min
           </Text>
           {slot.note !== null && <Body muted>{slot.note}</Body>}
           <Body muted>Pick a tile and Leggy makes it fit.</Body>
-        </Card>
+        </View>
       )}
       {slotMessage !== null && <Body muted>{slotMessage}</Body>}
 
       <View style={styles.grid}>
         {orderedCategories(new Date()).map((category) => (
-          <Pressable
+          <Tappable
             key={category.id}
-            accessibilityRole="button"
             accessibilityLabel={category.label}
             onPress={() => onPick({ mode, category: category.id, minutes: slot?.minutes ?? 15 })}
-            style={({ pressed }) => [
-              styles.tile,
-              category.id === 'surprise' && styles.surprise,
-              pressed && styles.pressed,
-            ]}>
-            <Ionicons name={category.icon} size={34} color={Colors.black} />
+            style={[styles.tile, category.id === 'surprise' && styles.surprise]}>
+            <Image source={CATEGORY_ART[category.id]} style={styles.tileArt} contentFit="contain" />
             <Text style={styles.tileLabel}>{category.label}</Text>
-          </Pressable>
+          </Tappable>
         ))}
       </View>
 
@@ -121,63 +113,83 @@ export function Picker({
 
 const styles = StyleSheet.create({
   container: {
-    gap: Spacing.four,
+    gap: Spacing.three,
   },
-  streak: {
+  note: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.two,
-  },
-  streakText: {
-    color: Colors.black,
-    fontFamily: Fonts.sans,
-    fontSize: 20,
-    fontWeight: '800',
-  },
-  doneCard: {
     backgroundColor: Colors.greenSoft,
-    borderColor: Colors.green,
+    borderRadius: Radius.tile,
+    padding: Spacing.three,
   },
-  bold: {
-    fontWeight: '800',
+  noteText: {
+    flex: 1,
+    fontFamily: Fonts.sansBold,
+    fontSize: 16,
+    lineHeight: 22,
+  },
+  heading: {
+    color: Colors.black,
+    fontFamily: Fonts.display,
+    fontSize: 22,
+    lineHeight: 28,
+    marginTop: Spacing.two,
   },
   switch: {
     flexDirection: 'row',
-    borderWidth: 2,
-    borderColor: Colors.black,
+    backgroundColor: Colors.soft,
     borderRadius: Radius.pill,
     padding: 4,
   },
   switchHalf: {
     flex: 1,
-    minHeight: 64,
+    minHeight: 48,
     borderRadius: Radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
-    gap: Spacing.two,
+    gap: 6,
   },
   switchActive: {
-    backgroundColor: Colors.black,
+    backgroundColor: Colors.white,
+    ...Shadow.raised,
   },
   switchLabel: {
-    color: Colors.black,
-    fontFamily: Fonts.sans,
-    fontSize: 18,
-    fontWeight: '800',
+    color: Colors.gray,
+    fontFamily: Fonts.sansBold,
+    fontSize: 16,
   },
   switchLabelActive: {
-    color: Colors.white,
+    color: Colors.black,
+  },
+  find: {
+    alignSelf: 'center',
+    minHeight: 44,
+    minWidth: 216,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingHorizontal: Spacing.three,
+    borderRadius: Radius.pill,
+    backgroundColor: Colors.soft,
+  },
+  findLabel: {
+    color: Colors.black,
+    fontFamily: Fonts.sansBold,
+    fontSize: 16,
   },
   slot: {
     gap: Spacing.one,
-    borderColor: Colors.green,
+    backgroundColor: Colors.greenSoft,
+    borderRadius: Radius.tile,
+    padding: Spacing.three,
   },
   slotTitle: {
     color: Colors.black,
-    fontFamily: Fonts.sans,
-    fontSize: 22,
-    fontWeight: '900',
+    fontFamily: Fonts.display,
+    fontSize: 20,
   },
   grid: {
     flexDirection: 'row',
@@ -187,25 +199,23 @@ const styles = StyleSheet.create({
   tile: {
     flexBasis: '46%',
     flexGrow: 1,
-    minHeight: 112,
     borderRadius: Radius.tile,
-    borderWidth: 2,
-    borderColor: Colors.black,
     padding: Spacing.three,
-    justifyContent: 'space-between',
-    backgroundColor: Colors.white,
+    paddingBottom: 14,
+    gap: Spacing.two,
+    alignItems: 'center',
+    backgroundColor: Colors.soft,
   },
   surprise: {
-    backgroundColor: Colors.green,
-    borderColor: Colors.green,
+    backgroundColor: Colors.greenSoft,
   },
-  pressed: {
-    opacity: 0.6,
+  tileArt: {
+    width: '100%',
+    aspectRatio: 1.15,
   },
   tileLabel: {
     color: Colors.black,
-    fontFamily: Fonts.sans,
-    fontSize: 20,
-    fontWeight: '900',
+    fontFamily: Fonts.display,
+    fontSize: 19,
   },
 });

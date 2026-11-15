@@ -5,7 +5,7 @@ import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { LeggySays } from '@/components/leggy';
 import { Body, Button, Card, TextButton } from '@/components/ui';
 import { Colors, Fonts, Radius, Spacing } from '@/constants/theme';
-import { KINDS, SKILLS } from '@/lib/legends';
+import { CATEGORY_ART, KINDS, SKILLS } from '@/lib/legends';
 import type { Legend } from '@/lib/types';
 
 export function LegendView({
@@ -29,57 +29,72 @@ export function LegendView({
   const skill = SKILLS[legend.skill];
   return (
     <View style={styles.container}>
-      <TextButton label="Pick something else" onPress={onPicker} />
-
-      {legend.challenge !== undefined && (
-        <View style={styles.challenge}>
-          <LeggySays mood="wow">{legend.challenge}</LeggySays>
-          <View style={styles.attempt}>
-            {legend.challengeImageUrl !== null ? (
-              <Image source={{ uri: legend.challengeImageUrl }} style={styles.attemptImage} contentFit="cover" />
-            ) : (
-              <View style={[styles.attemptImage, styles.attemptPending]}>
-                <ActivityIndicator color={Colors.black} />
-              </View>
-            )}
-            <Text style={styles.caption}>
-              {legend.challengeImageUrl !== null ? "Leggy's try. Can you do better?" : 'Leggy is still drawing its try…'}
-            </Text>
-          </View>
-        </View>
-      )}
-
       <Card style={styles.card}>
-        <View style={styles.meta}>
-          <View style={styles.kind}>
-            <Ionicons name={kind.icon} size={22} color={Colors.black} />
-            <Text style={styles.kindLabel}>{kind.label}</Text>
-          </View>
-          <Text style={styles.minutes}>{legend.minutes} min</Text>
-        </View>
-        <Text style={styles.title}>{legend.title}</Text>
-        <View style={styles.steps}>
-          {legend.steps.map((step, i) => (
-            <View key={i} style={styles.step}>
-              <Text style={styles.stepNumber}>{i + 1}</Text>
-              <Body style={styles.stepText}>{step}</Body>
+        <View style={styles.hero}>
+          {legend.challengeImageUrl !== null ? (
+            <Image source={{ uri: legend.challengeImageUrl }} style={styles.heroImage} contentFit="cover" transition={200} />
+          ) : (
+            <Image
+              source={CATEGORY_ART[legend.category]}
+              style={[styles.heroArt, legend.challenge !== undefined && styles.heroArtCaptioned]}
+              contentFit="contain"
+            />
+          )}
+          <View style={styles.badges}>
+            <View style={styles.badge}>
+              <Ionicons name={kind.icon} size={16} color={Colors.black} />
+              <Text style={styles.badgeLabel}>{kind.label}</Text>
             </View>
-          ))}
+            <View style={styles.badge}>
+              <Text style={styles.badgeLabel}>{legend.minutes} min</Text>
+            </View>
+          </View>
+          {legend.challenge !== undefined && (
+            <View style={[styles.badge, styles.caption]}>
+              {legend.challengeImageUrl === null && <ActivityIndicator size="small" color={Colors.black} />}
+              <Text style={styles.badgeLabel}>
+                {legend.challengeImageUrl !== null ? "Leggy's try. Can you do better?" : 'Leggy is still drawing its try…'}
+              </Text>
+            </View>
+          )}
         </View>
-        <View style={styles.skill}>
-          <Ionicons name={skill.icon} size={20} color={Colors.black} />
-          <Text style={styles.skillText}>
-            Trains {skill.label} · +{legend.xp} XP
-          </Text>
+
+        <View style={styles.body}>
+          <Text style={styles.title}>{legend.title}</Text>
+          {legend.challenge !== undefined && (
+            <LeggySays pose={legend.category === 'bedtime' ? 'sleeping' : 'waving'} size={96}>
+              {legend.challenge}
+            </LeggySays>
+          )}
+          <View style={styles.steps}>
+            {legend.steps.map((step, i) => (
+              <View key={i} style={styles.step}>
+                <View style={styles.stepDot}>
+                  <Text style={styles.stepNumber}>{i + 1}</Text>
+                </View>
+                <Body style={styles.stepText}>{step}</Body>
+              </View>
+            ))}
+          </View>
+          <View style={styles.skill}>
+            <Ionicons name={skill.icon} size={18} color={Colors.greenDeep} />
+            <Text style={styles.skillText}>Trains {skill.label}</Text>
+            <View style={styles.xp}>
+              <Text style={styles.xpText}>+{legend.xp} XP</Text>
+            </View>
+          </View>
         </View>
       </Card>
 
       {legend.kind === 'story' && (legend.story?.length ?? 0) > 0 && (
-        <Button label="Read it aloud" icon="book" variant="outline" onPress={onRead} />
+        <Button label="Read it aloud" icon="book" variant="soft" onPress={onRead} />
       )}
       <Button label="We did it!" icon="checkmark-circle" variant="accent" onPress={onDone} />
-      <Button label="Another idea" icon="shuffle" variant="outline" onPress={onReroll} loading={rerolling} />
-      <TextButton label="Not today" onPress={onSkip} />
+      <Button label="Another idea" icon="shuffle" variant="soft" onPress={onReroll} loading={rerolling} />
+      <View style={styles.links}>
+        <TextButton label="Pick something else" onPress={onPicker} />
+        <TextButton label="Not today" onPress={onSkip} />
+      </View>
     </View>
   );
 }
@@ -88,67 +103,67 @@ const styles = StyleSheet.create({
   container: {
     gap: Spacing.three,
   },
-  challenge: {
-    gap: Spacing.three,
-  },
-  attempt: {
-    gap: Spacing.two,
-  },
-  attemptImage: {
-    width: '100%',
-    aspectRatio: 4 / 3,
-    borderRadius: Radius.tile,
-    borderWidth: 2,
-    borderColor: Colors.black,
-    backgroundColor: Colors.soft,
-  },
-  attemptPending: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  caption: {
-    color: Colors.gray,
-    fontFamily: Fonts.sans,
-    fontSize: 15,
-    fontWeight: '700',
-    textAlign: 'center',
-  },
   card: {
-    gap: Spacing.four,
+    padding: 0,
+    gap: 0,
   },
-  meta: {
+  hero: {
+    aspectRatio: 4 / 3,
+    borderTopLeftRadius: Radius.card,
+    borderTopRightRadius: Radius.card,
+    backgroundColor: Colors.greenSoft,
+    overflow: 'hidden',
+  },
+  heroImage: {
+    width: '100%',
+    height: '100%',
+  },
+  heroArt: {
+    position: 'absolute',
+    top: 56,
+    bottom: Spacing.two,
+    left: 0,
+    right: 0,
+  },
+  heroArtCaptioned: {
+    bottom: 60,
+  },
+  badges: {
+    position: 'absolute',
+    top: Spacing.three,
+    left: Spacing.three,
+    right: Spacing.three,
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
   },
-  kind: {
+  badge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: Colors.greenSoft,
+    backgroundColor: Colors.white,
     borderRadius: Radius.pill,
-    paddingHorizontal: Spacing.three,
+    paddingHorizontal: 12,
     paddingVertical: 6,
   },
-  kindLabel: {
+  badgeLabel: {
     color: Colors.black,
-    fontFamily: Fonts.sans,
-    fontSize: 16,
-    fontWeight: '800',
+    fontFamily: Fonts.sansBold,
+    fontSize: 14,
   },
-  minutes: {
-    color: Colors.gray,
-    fontFamily: Fonts.sans,
-    fontSize: 16,
-    fontWeight: '800',
+  caption: {
+    position: 'absolute',
+    bottom: Spacing.three,
+    alignSelf: 'center',
+  },
+  body: {
+    padding: Spacing.four,
+    gap: Spacing.four,
   },
   title: {
     color: Colors.black,
-    fontFamily: Fonts.sans,
-    fontSize: 34,
-    lineHeight: 40,
-    fontWeight: '900',
-    letterSpacing: -0.5,
+    fontFamily: Fonts.displayBold,
+    fontSize: 30,
+    lineHeight: 36,
   },
   steps: {
     gap: Spacing.three,
@@ -158,36 +173,53 @@ const styles = StyleSheet.create({
     gap: Spacing.three,
     alignItems: 'flex-start',
   },
+  stepDot: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: Colors.green,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   stepNumber: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: Colors.black,
-    color: Colors.white,
-    textAlign: 'center',
-    lineHeight: 32,
-    fontFamily: Fonts.sans,
-    fontSize: 17,
-    fontWeight: '900',
-    overflow: 'hidden',
+    color: Colors.black,
+    fontFamily: Fonts.display,
+    fontSize: 16,
   },
   stepText: {
     flex: 1,
-    fontSize: 20,
-    lineHeight: 28,
+    paddingTop: 2,
   },
   skill: {
     flexDirection: 'row',
     alignItems: 'center',
+    alignSelf: 'flex-start',
     gap: Spacing.two,
-    borderTopWidth: 1,
-    borderTopColor: Colors.line,
-    paddingTop: Spacing.three,
+    backgroundColor: Colors.greenSoft,
+    borderRadius: Radius.pill,
+    paddingLeft: 14,
+    paddingRight: 6,
+    paddingVertical: 6,
   },
   skillText: {
     color: Colors.black,
-    fontFamily: Fonts.sans,
-    fontSize: 17,
-    fontWeight: '800',
+    fontFamily: Fonts.sansBold,
+    fontSize: 15,
+  },
+  xp: {
+    backgroundColor: Colors.green,
+    borderRadius: Radius.pill,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  xpText: {
+    color: Colors.black,
+    fontFamily: Fonts.sansHeavy,
+    fontSize: 14,
+  },
+  links: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: Spacing.three,
   },
 });

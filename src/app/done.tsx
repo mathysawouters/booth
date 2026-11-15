@@ -6,18 +6,19 @@ import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { LeggySays } from '@/components/leggy';
 import { LeggyWaiting } from '@/components/leggy-waiting';
 import { LevelUp } from '@/components/level-up';
 import { SkillPanel } from '@/components/skill-panel';
-import { Body, Button, Field, Loading, Title } from '@/components/ui';
+import { Body, Button, Field, IconButton, Loading, Title } from '@/components/ui';
 import { VoiceClip } from '@/components/voice-clip';
-import { Colors, Fonts, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
+import { Colors, Fonts, MaxContentWidth, Radius, Shadow, Spacing } from '@/constants/theme';
 import { errorMessage } from '@/lib/errors';
 import { useKids } from '@/lib/kids';
+import { CATEGORY_ART } from '@/lib/legends';
 import type { CompleteResult, KidId, Legend } from '@/lib/types';
 import { upload } from '@/lib/upload';
 import { api } from '../../convex/_generated/api';
@@ -117,7 +118,7 @@ export default function DoneScreen() {
     return (
       <View style={[styles.screen, styles.center]}>
         <Body>No legend today yet.</Body>
-        <Button label="Back" variant="outline" onPress={() => router.back()} />
+        <Button label="Back" variant="soft" onPress={() => router.back()} />
       </View>
     );
   }
@@ -133,9 +134,9 @@ export default function DoneScreen() {
         <Title>Legend done!</Title>
         <View style={styles.photos}>
           <Polaroid uri={yourPhoto} label={name} />
-          <Polaroid uri={legend.challengeImageUrl} label="Leggy" />
+          <Polaroid uri={legend.challengeImageUrl} fallback={CATEGORY_ART[legend.category]} label="Leggy" />
         </View>
-        <LeggySays mood={reactionText === null ? 'thinking' : 'happy'}>
+        <LeggySays pose={reactionText === null ? 'thinking' : 'proud'} size={150}>
           {reactionText ?? 'Leggy is looking at your photo…'}
         </LeggySays>
         {quoteText !== null && <Text style={styles.quote}>“{quoteText}”</Text>}
@@ -153,9 +154,7 @@ export default function DoneScreen() {
       <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={[styles.content, padding]}>
         <View style={styles.top}>
           <Title style={styles.flex}>We did it!</Title>
-          <Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={() => router.back()} hitSlop={16}>
-            <Ionicons name="close" size={32} color={Colors.black} />
-          </Pressable>
+          <IconButton icon="close" label="Close" onPress={() => router.back()} />
         </View>
         <Body muted>{legend.title}</Body>
 
@@ -170,15 +169,15 @@ export default function DoneScreen() {
         <View style={styles.row}>
           {HAS_CAMERA ? (
             <View style={styles.flex}>
-              <Button label="Camera" icon="camera" variant="outline" onPress={takePhoto} />
+              <Button label="Camera" icon="camera" variant="soft" onPress={takePhoto} />
             </View>
           ) : (
             <View style={styles.flex}>
-              <Button label="Sample" icon="image" variant="outline" onPress={samplePhoto} />
+              <Button label="Sample" icon="image" variant="soft" onPress={samplePhoto} />
             </View>
           )}
           <View style={styles.flex}>
-            <Button label="Library" icon="images" variant="outline" onPress={pickPhoto} />
+            <Button label="Library" icon="images" variant="soft" onPress={pickPhoto} />
           </View>
         </View>
 
@@ -201,11 +200,13 @@ export default function DoneScreen() {
   );
 }
 
-function Polaroid({ uri, label }: { uri: string | null; label: string }) {
+function Polaroid({ uri, fallback, label }: { uri: string | null; fallback?: number; label: string }) {
   return (
     <View style={styles.polaroid}>
       {uri !== null ? (
-        <Image source={{ uri }} style={styles.polaroidImage} contentFit="cover" />
+        <Image source={{ uri }} style={styles.polaroidImage} contentFit="cover" transition={200} />
+      ) : fallback !== undefined ? (
+        <Image source={fallback} style={[styles.polaroidImage, styles.empty]} contentFit="contain" />
       ) : (
         <View style={[styles.polaroidImage, styles.empty]}>
           <Ionicons name="image" size={32} color={Colors.gray} />
@@ -244,17 +245,14 @@ const styles = StyleSheet.create({
   },
   label: {
     color: Colors.black,
-    fontFamily: Fonts.sans,
-    fontSize: 22,
-    fontWeight: '900',
+    fontFamily: Fonts.display,
+    fontSize: 20,
     marginTop: Spacing.three,
   },
   preview: {
     width: '100%',
     aspectRatio: 4 / 3,
     borderRadius: Radius.card,
-    borderWidth: 2,
-    borderColor: Colors.black,
     overflow: 'hidden',
   },
   empty: {
@@ -272,7 +270,7 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
   },
   error: {
-    fontWeight: '700',
+    fontFamily: Fonts.sansBold,
   },
   photos: {
     flexDirection: 'row',
@@ -280,30 +278,27 @@ const styles = StyleSheet.create({
   },
   polaroid: {
     flex: 1,
-    borderWidth: 2,
-    borderColor: Colors.black,
     borderRadius: Radius.tile,
-    padding: Spacing.two,
+    padding: 10,
     gap: Spacing.two,
     backgroundColor: Colors.white,
+    ...Shadow.card,
   },
   polaroidImage: {
     width: '100%',
     aspectRatio: 1,
-    borderRadius: 14,
+    borderRadius: 16,
   },
   polaroidLabel: {
     color: Colors.black,
-    fontFamily: Fonts.sans,
+    fontFamily: Fonts.display,
     fontSize: 17,
-    fontWeight: '900',
     textAlign: 'center',
   },
   quote: {
     color: Colors.black,
-    fontFamily: Fonts.serif,
-    fontSize: 26,
-    lineHeight: 34,
-    fontStyle: 'italic',
+    fontFamily: Fonts.serifItalic,
+    fontSize: 22,
+    lineHeight: 32,
   },
 });

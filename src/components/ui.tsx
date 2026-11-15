@@ -2,19 +2,52 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import type { ComponentProps, ReactNode } from 'react';
 import {
   ActivityIndicator,
+  Platform,
   Pressable,
   StyleSheet,
   Text,
   TextInput,
   View,
+  type PressableProps,
   type StyleProp,
   type TextInputProps,
   type TextProps,
   type ViewStyle,
 } from 'react-native';
+import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Colors, Fonts, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
+import { Colors, Fonts, MaxContentWidth, Radius, Shadow, Spacing } from '@/constants/theme';
+import { tapHaptic } from '@/lib/haptics';
+
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+
+export function Tappable({
+  style,
+  scaleTo = 0.96,
+  onPressIn,
+  onPressOut,
+  ...props
+}: Omit<PressableProps, 'style'> & { style?: StyleProp<ViewStyle>; scaleTo?: number }) {
+  const scale = useSharedValue(1);
+  const animated = useAnimatedStyle(() => ({ transform: [{ scale: scale.get() }] }));
+  return (
+    <AnimatedPressable
+      accessibilityRole="button"
+      {...props}
+      onPressIn={(event) => {
+        scale.set(withSpring(scaleTo, { damping: 18, stiffness: 320 }));
+        tapHaptic();
+        onPressIn?.(event);
+      }}
+      onPressOut={(event) => {
+        scale.set(withSpring(1, { damping: 12, stiffness: 260 }));
+        onPressOut?.(event);
+      }}
+      style={[style, animated]}
+    />
+  );
+}
 
 export function Screen({ children, style }: { children: ReactNode; style?: ViewStyle }) {
   const insets = useSafeAreaInsets();
@@ -46,20 +79,15 @@ export function Button({
   disabled?: boolean;
   loading?: boolean;
   icon?: ComponentProps<typeof Ionicons>['name'];
-  variant?: 'solid' | 'accent' | 'outline';
+  variant?: 'solid' | 'accent' | 'soft';
 }) {
   const color = variant === 'solid' ? Colors.white : Colors.black;
   return (
-    <Pressable
-      accessibilityRole="button"
+    <Tappable
       accessibilityLabel={label}
       onPress={onPress}
       disabled={disabled || loading}
-      style={({ pressed }) => [
-        styles.button,
-        styles[variant],
-        (pressed || disabled) && styles.dimmed,
-      ]}>
+      style={[styles.button, styles[variant], disabled && styles.dimmed]}>
       {loading ? (
         <ActivityIndicator color={color} />
       ) : (
@@ -68,15 +96,31 @@ export function Button({
           <Text style={[styles.buttonLabel, { color }]}>{label}</Text>
         </View>
       )}
-    </Pressable>
+    </Tappable>
   );
 }
 
 export function TextButton({ label, onPress }: { label: string; onPress: () => void }) {
   return (
-    <Pressable accessibilityRole="button" onPress={onPress} hitSlop={12} style={styles.textButton}>
+    <Tappable onPress={onPress} hitSlop={12} style={styles.textButton}>
       <Text style={styles.textButtonLabel}>{label}</Text>
-    </Pressable>
+    </Tappable>
+  );
+}
+
+export function IconButton({
+  icon,
+  label,
+  onPress,
+}: {
+  icon: ComponentProps<typeof Ionicons>['name'];
+  label: string;
+  onPress: () => void;
+}) {
+  return (
+    <Tappable accessibilityLabel={label} onPress={onPress} hitSlop={12} scaleTo={0.9} style={styles.iconButton}>
+      <Ionicons name={icon} size={24} color={Colors.black} />
+    </Tappable>
   );
 }
 
@@ -106,21 +150,29 @@ export function Chip({
   onPress?: () => void;
 }) {
   return (
-    <Pressable
-      accessibilityRole="button"
+    <Tappable
       accessibilityState={{ selected }}
       onPress={onPress}
       disabled={onPress === undefined}
+      scaleTo={0.92}
       style={[styles.chip, selected && styles.chipSelected]}>
       <Text style={styles.chipLabel}>{label}</Text>
-    </Pressable>
+    </Tappable>
+  );
+}
+
+export function Avatar({ name, size = 48 }: { name: string; size?: number }) {
+  return (
+    <View style={[styles.avatar, { width: size, height: size, borderRadius: size / 2 }]}>
+      <Text style={[styles.avatarText, { fontSize: size * 0.4 }]}>{name.trim().slice(0, 2).toUpperCase()}</Text>
+    </View>
   );
 }
 
 export function Loading() {
   return (
     <View style={styles.center}>
-      <ActivityIndicator color={Colors.black} size="large" />
+      <ActivityIndicator color={Colors.greenDeep} size="large" />
     </View>
   );
 }
@@ -139,39 +191,34 @@ const styles = StyleSheet.create({
   },
   title: {
     color: Colors.black,
-    fontFamily: Fonts.sans,
-    fontSize: 40,
-    lineHeight: 46,
-    fontWeight: '900',
-    letterSpacing: -1,
+    fontFamily: Fonts.displayBold,
+    fontSize: 34,
+    lineHeight: 40,
   },
   body: {
     color: Colors.black,
     fontFamily: Fonts.sans,
-    fontSize: 19,
+    fontSize: 18,
     lineHeight: 26,
   },
   muted: {
     color: Colors.gray,
   },
   button: {
-    minHeight: 62,
+    minHeight: 60,
     borderRadius: Radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: Spacing.four,
-    borderWidth: 2,
-    borderColor: Colors.black,
   },
   solid: {
     backgroundColor: Colors.black,
   },
   accent: {
     backgroundColor: Colors.green,
-    borderColor: Colors.green,
   },
-  outline: {
-    backgroundColor: Colors.white,
+  soft: {
+    backgroundColor: Colors.soft,
   },
   buttonRow: {
     flexDirection: 'row',
@@ -179,60 +226,69 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
   },
   buttonLabel: {
-    fontFamily: Fonts.sans,
+    fontFamily: Fonts.display,
     fontSize: 20,
-    fontWeight: '800',
   },
   dimmed: {
-    opacity: 0.5,
+    opacity: 0.45,
   },
   textButton: {
     alignSelf: 'center',
     paddingVertical: Spacing.two,
+    paddingHorizontal: Spacing.three,
   },
   textButtonLabel: {
     color: Colors.gray,
-    fontFamily: Fonts.sans,
-    fontSize: 17,
-    fontWeight: '600',
-    textDecorationLine: 'underline',
+    fontFamily: Fonts.sansBold,
+    fontSize: 16,
+  },
+  iconButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: Colors.soft,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   field: {
-    minHeight: 60,
-    borderWidth: 2,
-    borderColor: Colors.black,
-    borderRadius: 18,
+    minHeight: 58,
+    borderRadius: Radius.field,
     paddingHorizontal: Spacing.three,
     color: Colors.black,
-    backgroundColor: Colors.white,
-    fontFamily: Fonts.sans,
-    fontSize: 20,
+    backgroundColor: Colors.soft,
+    fontFamily: Fonts.sansSemi,
+    fontSize: 18,
+    ...Platform.select({ web: { outlineColor: Colors.green } }),
   },
   card: {
     borderRadius: Radius.card,
-    borderWidth: 2,
-    borderColor: Colors.black,
     backgroundColor: Colors.white,
     padding: Spacing.four,
     gap: Spacing.three,
+    ...Shadow.card,
   },
   chip: {
-    borderWidth: 2,
-    borderColor: Colors.black,
     borderRadius: Radius.pill,
     paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two,
-    backgroundColor: Colors.white,
+    paddingVertical: 10,
+    backgroundColor: Colors.soft,
   },
   chipSelected: {
     backgroundColor: Colors.green,
-    borderColor: Colors.green,
   },
   chipLabel: {
     color: Colors.black,
-    fontFamily: Fonts.sans,
-    fontSize: 17,
-    fontWeight: '700',
+    fontFamily: Fonts.sansBold,
+    fontSize: 16,
+  },
+  avatar: {
+    backgroundColor: Colors.soft,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarText: {
+    color: Colors.black,
+    fontFamily: Fonts.display,
   },
   center: {
     flex: 1,

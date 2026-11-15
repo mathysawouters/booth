@@ -2,15 +2,15 @@ import { useAuthActions } from '@convex-dev/auth/react';
 import { useMutation, useQuery } from 'convex/react';
 import { Image } from 'expo-image';
 import { useState } from 'react';
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { FlatList, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { LeggySays } from '@/components/leggy';
-import { Body, Button, Card, Chip, Field, Title } from '@/components/ui';
+import { Avatar, Body, Button, Card, Field, Tappable, Title } from '@/components/ui';
 import { BottomTabInset, Colors, Fonts, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { formatDay } from '@/lib/day';
 import { errorMessage } from '@/lib/errors';
-import { SKILLS } from '@/lib/legends';
+import { CATEGORY_ART, SKILLS } from '@/lib/legends';
 import type { Cheer, FeedLegend, LegendId } from '@/lib/types';
 import { api } from '../../../convex/_generated/api';
 
@@ -78,6 +78,7 @@ export default function FamilyScreen() {
             <Button
               label="Invite"
               icon="person-add"
+              variant="accent"
               onPress={invite}
               loading={inviting}
               disabled={username.trim().length === 0}
@@ -86,7 +87,12 @@ export default function FamilyScreen() {
             {family !== undefined && family.length > 0 && (
               <View style={styles.members}>
                 {family.map((member) => (
-                  <Chip key={member._id} label={`@${member.username ?? 'unknown'}`} />
+                  <View key={member._id} style={styles.member}>
+                    <Avatar name={member.username ?? '?'} size={56} />
+                    <Text style={styles.memberName} numberOfLines={1}>
+                      @{member.username ?? 'unknown'}
+                    </Text>
+                  </View>
                 ))}
               </View>
             )}
@@ -95,7 +101,7 @@ export default function FamilyScreen() {
       }
       ListEmptyComponent={
         feed === undefined ? undefined : (
-          <LeggySays>Finished legends from your family show up here. Go do one!</LeggySays>
+          <LeggySays pose="waving">Finished legends from your family show up here. Go do one!</LeggySays>
         )
       }
       renderItem={({ item }) => (
@@ -104,7 +110,7 @@ export default function FamilyScreen() {
       ListFooterComponent={
         <View style={styles.footer}>
           <Body muted>Signed in as @{me?.username ?? '…'}</Body>
-          <Button label="Sign out" variant="outline" onPress={() => void signOut()} />
+          <Button label="Sign out" variant="soft" onPress={() => void signOut()} />
         </View>
       }
     />
@@ -130,36 +136,45 @@ function FeedCard({
   return (
     <Card style={styles.card}>
       <View style={styles.cardHead}>
-        <Text style={styles.kid}>{item.kidName}</Text>
-        <Text style={styles.meta}>
-          {item.parentName !== null ? `with @${item.parentName} · ` : ''}
-          {formatDay(item.day)}
-        </Text>
-      </View>
-      {item.levelUp !== undefined && (
-        <View style={styles.levelUp}>
-          <Text style={styles.levelUpText}>
-            {SKILLS[item.skill].label} level {item.levelUp}!
+        <Avatar name={item.kidName} size={48} />
+        <View style={styles.cardHeadText}>
+          <Text style={styles.kid}>{item.kidName}</Text>
+          <Text style={styles.meta}>
+            {item.parentName !== null ? `with @${item.parentName} · ` : ''}
+            {formatDay(item.day)}
           </Text>
         </View>
-      )}
-      {item.photoUrl !== null && <Image source={{ uri: item.photoUrl }} style={styles.photo} contentFit="cover" />}
+      </View>
+      <View style={styles.frame}>
+        {item.photoUrl !== null ? (
+          <Image source={{ uri: item.photoUrl }} style={styles.photo} contentFit="cover" transition={200} />
+        ) : (
+          <Image source={CATEGORY_ART[item.category]} style={styles.photo} contentFit="contain" />
+        )}
+        {item.levelUp !== undefined && (
+          <View style={styles.levelUp}>
+            <Text style={styles.levelUpText}>
+              {SKILLS[item.skill].label} level {item.levelUp}!
+            </Text>
+          </View>
+        )}
+      </View>
       <Text style={styles.title}>{item.title}</Text>
       {item.quote !== undefined && item.quote.length > 0 && <Text style={styles.quote}>“{item.quote}”</Text>}
       <View style={styles.cheers}>
         {CHEERS.map((emoji) => (
-          <Pressable
+          <Tappable
             key={emoji}
-            accessibilityRole="button"
             accessibilityLabel={`Cheer ${emoji}`}
             onPress={() => onCheer(emoji)}
-            style={({ pressed }) => [styles.cheer, mine.has(emoji) && styles.cheerMine, pressed && styles.pressed]}>
+            scaleTo={0.85}
+            style={[styles.cheer, mine.has(emoji) && styles.cheerMine]}>
             <Text style={styles.emoji}>{emoji}</Text>
             {(counts.get(emoji) ?? 0) > 0 && <Text style={styles.count}>{counts.get(emoji)}</Text>}
-          </Pressable>
+          </Tappable>
         ))}
       </View>
-      {names.length > 0 && <Body muted>Cheered by {names.map((n) => `@${n}`).join(', ')}</Body>}
+      {names.length > 0 && <Body muted style={styles.cheeredBy}>Cheered by {names.map((n) => `@${n}`).join(', ')}</Body>}
     </Card>
   );
 }
@@ -177,109 +192,123 @@ const styles = StyleSheet.create({
     gap: Spacing.four,
   },
   header: {
-    gap: Spacing.four,
+    gap: Spacing.three,
   },
   cardTitle: {
     color: Colors.black,
-    fontFamily: Fonts.sans,
-    fontSize: 24,
-    fontWeight: '900',
+    fontFamily: Fonts.display,
+    fontSize: 22,
   },
   bold: {
-    fontWeight: '700',
+    fontFamily: Fonts.sansBold,
   },
   members: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: Spacing.two,
+    gap: Spacing.three,
+  },
+  member: {
+    width: 72,
+    alignItems: 'center',
+    gap: 6,
+  },
+  memberName: {
+    color: Colors.gray,
+    fontFamily: Fonts.sansBold,
+    fontSize: 13,
   },
   card: {
     padding: Spacing.three,
   },
   cardHead: {
-    gap: 2,
-    paddingHorizontal: Spacing.one,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  cardHeadText: {
+    flex: 1,
   },
   kid: {
     color: Colors.black,
-    fontFamily: Fonts.sans,
-    fontSize: 26,
-    fontWeight: '900',
+    fontFamily: Fonts.display,
+    fontSize: 22,
+    lineHeight: 26,
   },
   meta: {
     color: Colors.gray,
-    fontFamily: Fonts.sans,
-    fontSize: 16,
-    fontWeight: '700',
+    fontFamily: Fonts.sansSemi,
+    fontSize: 14,
   },
-  levelUp: {
-    backgroundColor: Colors.green,
-    borderRadius: Radius.tile,
-    padding: Spacing.three,
-  },
-  levelUpText: {
-    color: Colors.black,
-    fontFamily: Fonts.sans,
-    fontSize: 26,
-    fontWeight: '900',
-    textAlign: 'center',
+  frame: {
+    borderRadius: Radius.field,
+    backgroundColor: Colors.soft,
+    overflow: 'hidden',
   },
   photo: {
     width: '100%',
     aspectRatio: 4 / 3,
-    borderRadius: Radius.tile,
-    backgroundColor: Colors.soft,
+  },
+  levelUp: {
+    position: 'absolute',
+    left: 12,
+    bottom: 12,
+    backgroundColor: Colors.green,
+    borderRadius: Radius.pill,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+  },
+  levelUpText: {
+    color: Colors.black,
+    fontFamily: Fonts.display,
+    fontSize: 16,
   },
   title: {
     color: Colors.black,
-    fontFamily: Fonts.sans,
+    fontFamily: Fonts.display,
     fontSize: 22,
     lineHeight: 28,
-    fontWeight: '900',
     paddingHorizontal: Spacing.one,
   },
   quote: {
     color: Colors.black,
-    fontFamily: Fonts.serif,
-    fontSize: 20,
-    lineHeight: 28,
-    fontStyle: 'italic',
+    fontFamily: Fonts.serifItalic,
+    fontSize: 18,
+    lineHeight: 27,
     paddingHorizontal: Spacing.one,
   },
   cheers: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    gap: Spacing.one,
+    gap: Spacing.two,
   },
   cheer: {
     flex: 1,
-    minHeight: 60,
-    borderRadius: 18,
-    borderWidth: 2,
-    borderColor: Colors.line,
+    minHeight: 64,
+    borderRadius: 20,
+    backgroundColor: Colors.soft,
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
     gap: 2,
   },
   cheerMine: {
-    borderColor: Colors.green,
-    backgroundColor: Colors.greenSoft,
-  },
-  pressed: {
-    transform: [{ scale: 0.92 }],
+    backgroundColor: Colors.green,
   },
   emoji: {
     fontSize: 30,
   },
   count: {
     color: Colors.black,
-    fontFamily: Fonts.sans,
+    fontFamily: Fonts.sansHeavy,
     fontSize: 14,
-    fontWeight: '900',
+  },
+  cheeredBy: {
+    fontSize: 14,
+    lineHeight: 20,
+    paddingHorizontal: Spacing.one,
   },
   footer: {
     gap: Spacing.three,
-    paddingTop: Spacing.five,
+    paddingTop: Spacing.four,
   },
 });

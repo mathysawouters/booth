@@ -1,11 +1,10 @@
-import Ionicons from '@expo/vector-icons/Ionicons';
 import { useMutation } from 'convex/react';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Body, Button, Chip, Field, Title } from '@/components/ui';
+import { Body, Button, Chip, Field, IconButton, Title } from '@/components/ui';
 import { Colors, Fonts, MaxContentWidth, Spacing } from '@/constants/theme';
 import { errorMessage } from '@/lib/errors';
 import { useKids } from '@/lib/kids';
@@ -86,9 +85,7 @@ export default function AddKidScreen() {
         ]}>
         <View style={styles.top}>
           <Title>Add a kid</Title>
-          <Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={() => router.back()} hitSlop={16}>
-            <Ionicons name="close" size={32} color={Colors.black} />
-          </Pressable>
+          <IconButton icon="close" label="Close" onPress={() => router.back()} />
         </View>
 
         <View style={styles.section}>
@@ -175,9 +172,8 @@ const styles = StyleSheet.create({
   },
   label: {
     color: Colors.black,
-    fontFamily: Fonts.sans,
+    fontFamily: Fonts.display,
     fontSize: 20,
-    fontWeight: '900',
   },
   wrap: {
     flexDirection: 'row',
@@ -190,6 +186,6 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
   },
   error: {
-    fontWeight: '700',
+    fontFamily: Fonts.sansBold,
   },
 });

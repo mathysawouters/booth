@@ -1,7 +1,8 @@
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useAction, useMutation, useQuery } from 'convex/react';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { KidSwitcher } from '@/components/kid-switcher';
@@ -10,7 +11,7 @@ import { LeggyWaiting } from '@/components/leggy-waiting';
 import { LegendView } from '@/components/legend-view';
 import { Picker } from '@/components/picker';
 import { Body, Button, Loading, Title } from '@/components/ui';
-import { BottomTabInset, Colors, MaxContentWidth, Spacing } from '@/constants/theme';
+import { BottomTabInset, Colors, Fonts, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { localDay } from '@/lib/day';
 import { errorMessage } from '@/lib/errors';
 import { useKids } from '@/lib/kids';
@@ -33,7 +34,7 @@ function Welcome() {
   const insets = useSafeAreaInsets();
   return (
     <View style={[styles.screen, styles.welcome, { paddingTop: insets.top + Spacing.five }]}>
-      <Leggy size={180} />
+      <Leggy size={260} pose="waving" />
       <Title style={styles.centerText}>Hi, I&apos;m Leggy!</Title>
       <Body muted style={styles.centerText}>
         Tell me about your kid and I&apos;ll find one fun thing to do together every day.
@@ -111,6 +112,7 @@ function KidToday({ kid, kids, onSelect }: { kid: Kid; kids: Kid[]; onSelect: (i
 
   const open = current?.status === 'open' ? current : null;
   const params = { kid: kid._id, day };
+  const evening = new Date().getHours() >= 18;
 
   return (
     <ScrollView
@@ -119,6 +121,24 @@ function KidToday({ kid, kids, onSelect }: { kid: Kid; kids: Kid[]; onSelect: (i
         styles.content,
         { paddingTop: insets.top + Spacing.three, paddingBottom: insets.bottom + BottomTabInset + Spacing.five },
       ]}>
+      <View style={styles.header}>
+        <View style={styles.headerText}>
+          <Title>
+            {evening ? 'Tonight' : 'Today'} with {kid.name}
+          </Title>
+          <View style={styles.streak}>
+            <Ionicons name="flame" size={16} color={Colors.greenDeep} />
+            <Text style={styles.streakText}>
+              {streak === undefined
+                ? ' '
+                : streak === 0
+                  ? 'Start a streak today'
+                  : `${streak} ${streak === 1 ? 'day' : 'days'} in a row`}
+            </Text>
+          </View>
+        </View>
+        <Leggy size={104} pose={evening ? 'sleeping' : 'waving'} />
+      </View>
       <KidSwitcher kids={kids} selected={kid._id} onSelect={onSelect} />
       {error !== null && <Body style={styles.error}>{error}</Body>}
       {open !== null && !picking ? (
@@ -133,7 +153,6 @@ function KidToday({ kid, kids, onSelect }: { kid: Kid; kids: Kid[]; onSelect: (i
         />
       ) : (
         <Picker
-          streak={streak}
           doneToday={current?.status === 'done'}
           onBack={open !== null ? () => setPicking(false) : undefined}
           onPick={generate}
@@ -153,7 +172,31 @@ const styles = StyleSheet.create({
     maxWidth: MaxContentWidth,
     alignSelf: 'center',
     paddingHorizontal: Spacing.four,
-    gap: Spacing.four,
+    gap: Spacing.three,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.three,
+  },
+  headerText: {
+    flex: 1,
+    alignItems: 'flex-start',
+    gap: Spacing.two,
+  },
+  streak: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: Colors.greenSoft,
+    borderRadius: Radius.pill,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  streakText: {
+    color: Colors.black,
+    fontFamily: Fonts.sansBold,
+    fontSize: 14,
   },
   welcome: {
     alignItems: 'center',
@@ -164,6 +207,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   error: {
-    fontWeight: '700',
+    fontFamily: Fonts.sansBold,
   },
 });

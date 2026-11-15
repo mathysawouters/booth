@@ -3,11 +3,11 @@ import {
   useSignUpWithUsernamePassword,
 } from '@convex-dev/auth/methods/username-password/react';
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, StyleSheet, Text, View } from 'react-native';
 
 import { Leggy } from '@/components/leggy';
-import { Body, Button, Field, Screen, Title } from '@/components/ui';
-import { Colors, Spacing } from '@/constants/theme';
+import { Body, Button, Field, Screen, TextButton } from '@/components/ui';
+import { Colors, Fonts, Spacing } from '@/constants/theme';
 import { api } from '../../convex/_generated/api';
 
 type Mode = 'signIn' | 'signUp';
@@ -65,13 +65,15 @@ export default function SignInScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.container}>
         <View style={styles.hero}>
-          <Leggy size={96} />
+          <Leggy size={220} pose="waving" />
           <Text style={styles.wordmark}>Little Legends</Text>
-          <Body muted>One fun thing with your kid, every day.</Body>
+          <Body muted style={styles.tagline}>
+            One fun thing with your kid, every day
+          </Body>
         </View>
 
         <View style={styles.form}>
-          <Title style={styles.heading}>{mode === 'signIn' ? 'Sign in' : 'Sign up'}</Title>
+          <Text style={styles.heading}>{mode === 'signIn' ? 'Sign in' : 'Sign up'}</Text>
           <Field
             nativeID="username"
             placeholder="Username"
@@ -95,20 +97,18 @@ export default function SignInScreen() {
           {error !== null && <Body style={styles.error}>{error}</Body>}
           <Button
             label={mode === 'signIn' ? 'Sign in' : 'Create account'}
+            variant="accent"
             onPress={submit}
             loading={pending}
             disabled={username.trim().length === 0 || password.length === 0}
           />
-          <Pressable
+          <TextButton
+            label={mode === 'signIn' ? 'New here? Create an account' : 'Have an account? Sign in'}
             onPress={() => {
               setMode(mode === 'signIn' ? 'signUp' : 'signIn');
               setError(null);
             }}
-            style={styles.switch}>
-            <Body muted style={styles.switchText}>
-              {mode === 'signIn' ? 'New here? Create an account' : 'Have an account? Sign in'}
-            </Body>
-          </Pressable>
+          />
         </View>
       </KeyboardAvoidingView>
     </Screen>
@@ -119,33 +119,33 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'space-between',
-    paddingBottom: Spacing.five,
+    paddingBottom: Spacing.four,
   },
   hero: {
-    paddingTop: Spacing.six,
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
     gap: Spacing.two,
   },
   wordmark: {
     color: Colors.black,
-    fontSize: 52,
-    lineHeight: 56,
-    fontWeight: '900',
-    letterSpacing: -2,
+    fontFamily: Fonts.displayBold,
+    fontSize: 42,
+    lineHeight: 48,
+    textAlign: 'center',
   },
-  heading: {
-    fontSize: 32,
+  tagline: {
+    textAlign: 'center',
   },
   form: {
     gap: Spacing.three,
   },
+  heading: {
+    color: Colors.black,
+    fontFamily: Fonts.display,
+    fontSize: 22,
+  },
   error: {
-    fontWeight: '700',
-  },
-  switch: {
-    alignItems: 'center',
-    paddingVertical: Spacing.two,
-  },
-  switchText: {
-    textDecorationLine: 'underline',
+    fontFamily: Fonts.sansBold,
   },
 });
