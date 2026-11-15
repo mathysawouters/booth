@@ -5,8 +5,8 @@ import * as Device from 'expo-device';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useState } from 'react';
-import { Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useRef, useState } from 'react';
+import { Platform, ScrollView, type ScrollViewInstance, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { LeggySays } from '@/components/leggy';
@@ -17,6 +17,7 @@ import { Body, Button, Field, IconButton, Loading, Title } from '@/components/ui
 import { VoiceClip } from '@/components/voice-clip';
 import { Colors, Fonts, MaxContentWidth, Radius, Shadow, Spacing } from '@/constants/theme';
 import { errorMessage } from '@/lib/errors';
+import { useScrollToEndOnKeyboard } from '@/lib/keyboard';
 import { useKids } from '@/lib/kids';
 import { CATEGORY_ART } from '@/lib/legends';
 import type { CompleteResult, KidId, Legend } from '@/lib/types';
@@ -55,6 +56,8 @@ export default function DoneScreen() {
   const [reaction, setReaction] = useState<string | null>(null);
   const [levelUpOpen, setLevelUpOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const scroll = useRef<ScrollViewInstance>(null);
+  const scrollToEndOnKeyboard = useScrollToEndOnKeyboard(scroll);
 
   async function takePhoto() {
     setError(null);
@@ -151,6 +154,7 @@ export default function DoneScreen() {
 
   return (
     <ScrollView
+      ref={scroll}
       style={styles.screen}
       automaticallyAdjustKeyboardInsets
       keyboardDismissMode="interactive"
@@ -190,6 +194,7 @@ export default function DoneScreen() {
         placeholder="“Again! Again!”"
         value={quote}
         onChangeText={setQuote}
+        onFocus={scrollToEndOnKeyboard}
         autoCapitalize="sentences"
         autoCorrect
         multiline
