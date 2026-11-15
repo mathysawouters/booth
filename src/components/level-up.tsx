@@ -41,7 +41,9 @@ export function LevelUp({
           <Text style={styles.title}>
             {SKILLS[skill].label} level {level}!
           </Text>
-          <Text style={styles.body}>{name} is getting more {SKILLS[skill].label.toLowerCase()} every day.</Text>
+          <Text style={styles.body}>
+            {name} is getting {SKILLS[skill].growing} every day.
+          </Text>
         </Animated.View>
         <View style={styles.action}>
           <Tappable accessibilityLabel="Yay!" onPress={onClose} style={styles.button}>
