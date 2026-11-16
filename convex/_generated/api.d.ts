@@ -10,6 +10,7 @@
 
 import type * as ai from "../ai.js";
 import type * as auth from "../auth.js";
+import type * as demo from "../demo.js";
 import type * as family from "../family.js";
 import type * as files from "../files.js";
 import type * as friends from "../friends.js";
@@ -29,6 +30,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   ai: typeof ai;
   auth: typeof auth;
+  demo: typeof demo;
   family: typeof family;
   files: typeof files;
   friends: typeof friends;
