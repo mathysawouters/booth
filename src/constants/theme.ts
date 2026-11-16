@@ -22,7 +22,7 @@ export const Colors = {
   mint: '#74EDBB',
   mintDark: '#36C28B',
   mintSoft: '#D2FBEA',
-  sky: '#82C1E8',
+  sky: '#9AC4D6',
   cream: '#FFF4DC',
 } as const;
 

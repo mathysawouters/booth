@@ -59,6 +59,7 @@ const POSES: Record<string, { source: number; ratio: number; eyes: Eye[] }> = {
 export type Pose = 'waving' | 'thinking' | 'reading' | 'sleeping' | 'cheering' | 'proud';
 
 const EYE_MARGIN = 0.02;
+const GROUND_SHADOW = 'rgba(24, 62, 8, 0.42)';
 const BLINK = { duration: 80 };
 const OPEN = { duration: 110 };
 
@@ -145,7 +146,8 @@ export function Leggy({
   }));
   const shadow = useAnimatedStyle(() => {
     const rise = Math.min(1, bob.get() * 0.4 + jump.get());
-    return { opacity: 0.22 - rise * 0.12, transform: [{ scale: 1 - rise * 0.4 }] };
+    const scale = 1 - rise * 0.22;
+    return { opacity: 1 - rise * 0.35, transform: [{ scaleX: scale }, { scaleY: scale * 0.22 }] };
   });
   const lid = useAnimatedStyle(() => ({ transform: [{ scaleY: blink.get() }] }));
 
@@ -169,7 +171,18 @@ export function Leggy({
       {sun !== undefined && (
         <View style={[styles.sun, { backgroundColor: sun, width: size * 0.92, height: size * 0.92, borderRadius: size }]} />
       )}
-      <Animated.View style={[styles.shadow, { width: width * 0.78, height: size * 0.07, bottom: -size * 0.03 }, shadow]} />
+      <Animated.View
+        style={[
+          styles.shadow,
+          {
+            width: width * 0.5,
+            height: width * 0.5,
+            bottom: size * 0.05 - width * 0.25,
+            boxShadow: `0 0 ${width * 0.1}px ${width * 0.04}px ${GROUND_SHADOW}`,
+          },
+          shadow,
+        ]}
+      />
       <Animated.View style={[styles.body, { width, height: size }, body]}>
         <Image source={source} style={styles.image} contentFit="contain" />
         {eyes.map(([left, top, right, bottom], i) => (
@@ -241,7 +254,7 @@ const styles = StyleSheet.create({
   shadow: {
     position: 'absolute',
     borderRadius: 999,
-    backgroundColor: Colors.black,
+    backgroundColor: GROUND_SHADOW,
   },
   sparkle: {
     position: 'absolute',

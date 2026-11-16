@@ -18,6 +18,7 @@ import { CATEGORY_ART, KINDS, shortStep, SKILLS, stepEmoji } from '@/lib/legends
 import type { Legend } from '@/lib/types';
 
 const GLANCE_STEPS = 3;
+const PICTURE_WAIT_MS = 90_000;
 
 export function LegendView({
   legend,
@@ -39,12 +40,22 @@ export function LegendView({
   onSkip: () => void;
 }) {
   const [more, setMore] = useState(false);
+  const [gaveUpOn, setGaveUpOn] = useState<string | null>(null);
   const kind = KINDS[legend.kind];
   const skill = SKILLS[legend.skill];
   const hasMore =
     legend.challenge !== undefined ||
     legend.steps.length > GLANCE_STEPS ||
     legend.steps.some((step) => shortStep(step).length < step.length - 1);
+  const gettingPicture = legend.challengeImageUrl === null && gaveUpOn !== legend._id;
+
+  useEffect(() => {
+    const wait = setTimeout(
+      () => setGaveUpOn(legend._id),
+      Math.max(0, legend._creationTime + PICTURE_WAIT_MS - Date.now()),
+    );
+    return () => clearTimeout(wait);
+  }, [legend._id, legend._creationTime]);
 
   return (
     <View style={styles.container}>
@@ -63,14 +74,15 @@ export function LegendView({
               <Text style={styles.badgeLabel}>{legend.minutes} min</Text>
             </View>
           </View>
-          {legend.challenge !== undefined &&
-            (legend.challengeImageUrl === null ? (
-              <Drawing />
-            ) : (
+          {gettingPicture ? (
+            <Drawing />
+          ) : (
+            legend.challengeImageUrl !== null && (
               <Animated.View entering={FadeIn.duration(500)} style={[styles.badge, styles.caption]}>
-                <Text style={styles.badgeLabel}>Leggy&apos;s try. Can you do better?</Text>
+                <Text style={styles.badgeLabel}>Tonight could look like this</Text>
               </Animated.View>
-            ))}
+            )
+          )}
         </View>
 
         <View style={styles.body}>
@@ -148,8 +160,8 @@ function Drawing() {
 
   return (
     <Animated.View exiting={FadeOut.duration(300)} style={[styles.badge, styles.caption]}>
-      <Animated.Text style={[styles.pencil, pencil]}>✏️</Animated.Text>
-      <Text style={styles.badgeLabel}>Leggy is drawing his attempt…</Text>
+      <Animated.Text style={[styles.pencil, pencil]}>📷</Animated.Text>
+      <Text style={styles.badgeLabel}>Getting tonight&apos;s picture…</Text>
     </Animated.View>
   );
 }
