@@ -61,7 +61,7 @@ export type Legend = {
   voiceUrl: string | null;
 };
 
-export type Cheer = { emoji: string; userName: string | null };
+export type Cheer = { emoji: string; userName: string | null; mine: boolean };
 
 export type FeedLegend = Legend & {
   kidName: string;

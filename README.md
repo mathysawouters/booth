@@ -27,7 +27,7 @@ The phone is the campfire, not the babysitter: you gather around it together, th
 6. **Leggy reacts** to the photo and the quote.
 7. **Skills level up.** Each Legend trains one of six skills: Brave, Kind, Curious, Money, Helper, Reader.
 8. **The Book keeps the memories.** Every finished Legend, with its photo and quote.
-9. **Family follow live and cheer.** Invite grandma by username; she sees each finished Legend the moment it lands and sends a cheer.
+9. **Family follow live and cheer.** Share your family code (like STAR-4821) with grandma; she joins with it, sees each finished Legend the moment it lands and sends a cheer.
 
 ## Screenshots
 

@@ -8,16 +8,19 @@ import { Nunito_400Regular } from '@expo-google-fonts/nunito/400Regular';
 import { Nunito_600SemiBold } from '@expo-google-fonts/nunito/600SemiBold';
 import { Nunito_700Bold } from '@expo-google-fonts/nunito/700Bold';
 import { Nunito_800ExtraBold } from '@expo-google-fonts/nunito/800ExtraBold';
-import { ConvexReactClient, useConvexAuth } from 'convex/react';
+import { ConvexReactClient, useConvexAuth, useQuery } from 'convex/react';
 import { useFonts } from 'expo-font';
 import { DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
-import { Platform } from 'react-native';
+import { Platform, StyleSheet, Text } from 'react-native';
 
-import { Colors } from '@/constants/theme';
+import { Leggy } from '@/components/leggy';
+import { Body, Button, Screen } from '@/components/ui';
+import { Colors, Fonts, Spacing } from '@/constants/theme';
+import { useDeviceSignIn } from '@/lib/device-sign-in';
 import { KidProvider } from '@/lib/kids';
 import { api } from '../../convex/_generated/api';
 
@@ -73,7 +76,10 @@ export default function RootLayout() {
 
 function RootNavigator({ fontsReady }: { fontsReady: boolean }) {
   const { isLoading, isAuthenticated } = useConvexAuth();
-  const ready = fontsReady && !isLoading;
+  const signIn = useDeviceSignIn(!isLoading && !isAuthenticated);
+  const kids = useQuery(api.kids.myKids, isAuthenticated ? {} : 'skip');
+  const ready = fontsReady && !isLoading && (isAuthenticated ? kids !== undefined : signIn.failed);
+  const onboarded = isAuthenticated && kids !== undefined && kids.length > 0;
 
   useEffect(() => {
     if (ready) {
@@ -85,17 +91,52 @@ function RootNavigator({ fontsReady }: { fontsReady: boolean }) {
     return null;
   }
 
+  if (!isAuthenticated) {
+    return <SignInFailed onRetry={signIn.retry} />;
+  }
+
   return (
     <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: Colors.white } }}>
-      <Stack.Protected guard={isAuthenticated}>
+      <Stack.Protected guard={onboarded}>
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="add-kid" options={{ presentation: 'modal' }} />
         <Stack.Screen name="story" options={{ presentation: 'fullScreenModal', animation: 'slide_from_bottom' }} />
         <Stack.Screen name="done" options={{ presentation: 'fullScreenModal', animation: 'slide_from_bottom' }} />
       </Stack.Protected>
-      <Stack.Protected guard={!isAuthenticated}>
-        <Stack.Screen name="sign-in" />
+      <Stack.Protected guard={!onboarded}>
+        <Stack.Screen name="welcome" />
+        <Stack.Screen name="onboarding" />
       </Stack.Protected>
     </Stack>
   );
 }
+
+function SignInFailed({ onRetry }: { onRetry: () => void }) {
+  return (
+    <Screen style={styles.failed}>
+      <Leggy size={180} pose="thinking" />
+      <Text style={styles.failedTitle}>Leggy can&apos;t connect</Text>
+      <Body muted style={styles.center}>
+        Check your internet connection and try again.
+      </Body>
+      <Button label="Try again" variant="accent" onPress={onRetry} />
+    </Screen>
+  );
+}
+
+const styles = StyleSheet.create({
+  failed: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.three,
+  },
+  failedTitle: {
+    color: Colors.black,
+    fontFamily: Fonts.display,
+    fontSize: 26,
+    textAlign: 'center',
+  },
+  center: {
+    textAlign: 'center',
+  },
+});

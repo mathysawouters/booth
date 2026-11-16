@@ -3,7 +3,7 @@ import type { Doc, Id } from "./_generated/dataModel";
 import { mutation, query, type QueryCtx } from "./_generated/server";
 import { areFriends } from "./friends";
 import { levelForXp, SKILLS } from "./levels";
-import { requireUserId } from "./users";
+import { cleanName, requireUserId } from "./users";
 
 const MAX_KIDS = 20;
 const MAX_INTERESTS = 10;
@@ -72,8 +72,9 @@ export const addKid = mutation({
     age: v.number(),
     interests: v.array(v.string()),
     note: v.optional(v.string()),
+    parentName: v.optional(v.string()),
   },
-  handler: async (ctx, { name, age, interests, note }) => {
+  handler: async (ctx, { name, age, interests, note, parentName }) => {
     const userId = await requireUserId(ctx);
     if (!Number.isInteger(age) || age < 1 || age > 17) {
       throw new ConvexError("age must be a whole number from 1 to 17");
@@ -87,6 +88,9 @@ export const addKid = mutation({
     const trimmedNote = note?.trim();
     if (trimmedNote && trimmedNote.length > 300) {
       throw new ConvexError("note must be at most 300 characters");
+    }
+    if (parentName !== undefined) {
+      await ctx.db.patch("users", userId, { name: cleanName(parentName) });
     }
     return await ctx.db.insert("kids", {
       parent: userId,
