@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { KidSwitcher } from '@/components/kid-switcher';
 import { LeggySays } from '@/components/leggy';
+import { PlusCard } from '@/components/plus-card';
 import { Card, Hero, Loading } from '@/components/ui';
 import { BottomTabInset, BRIGHT_TONES, Colors, Fonts, MaxContentWidth, Radius, Spacing, Tones } from '@/constants/theme';
 import { formatDay } from '@/lib/day';
@@ -47,6 +48,9 @@ export default function BookScreen() {
               <KidSwitcher kids={kids} selected={kid._id} onSelect={select} />
             </View>
           )}
+          <View style={styles.padded}>
+            <PlusCard />
+          </View>
         </View>
       }
       renderItem={({ item, index }) => <Page legend={item} index={index} />}

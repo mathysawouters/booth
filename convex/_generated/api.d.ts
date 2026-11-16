@@ -14,12 +14,14 @@ import type * as demo from "../demo.js";
 import type * as family from "../family.js";
 import type * as files from "../files.js";
 import type * as friends from "../friends.js";
+import type * as http from "../http.js";
 import type * as kids from "../kids.js";
 import type * as legends from "../legends.js";
 import type * as levels from "../levels.js";
 import type * as library from "../library.js";
 import type * as memory from "../memory.js";
 import type * as users from "../users.js";
+import type * as whop from "../whop.js";
 
 import type {
   ApiFromModules,
@@ -34,12 +36,14 @@ declare const fullApi: ApiFromModules<{
   family: typeof family;
   files: typeof files;
   friends: typeof friends;
+  http: typeof http;
   kids: typeof kids;
   legends: typeof legends;
   levels: typeof levels;
   library: typeof library;
   memory: typeof memory;
   users: typeof users;
+  whop: typeof whop;
 }>;
 
 /**

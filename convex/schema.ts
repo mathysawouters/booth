@@ -49,6 +49,7 @@ export default defineSchema({
   users: defineTable({
     name: v.optional(v.string()),
     familyCode: v.optional(v.string()),
+    plus: v.optional(v.boolean()),
   }).index("by_familyCode", ["familyCode"]),
 
   friendships: defineTable({
