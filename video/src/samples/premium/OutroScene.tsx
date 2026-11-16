@@ -2,7 +2,7 @@ import { AbsoluteFill, useCurrentFrame } from 'remotion';
 
 import { COPY } from '../../lib/data';
 import { GhostNumeral, Hairline } from './Backdrop';
-import { KineticLine, Label, toWords } from './KineticText';
+import { KineticLine, toWords } from './KineticText';
 import { FloatingLeggy } from './Leggy';
 import { EXPO_OUT, mix, ramp, sway } from './motion';
 import { COLOR, FONT, SAFE, accentGlow } from './theme';
@@ -81,8 +81,7 @@ export function OutroScene({ builtWithAt, length }: OutroSceneProps) {
           transform: `translateY(${mix(built, 20, 0)}px)`,
         }}
       >
-        <div style={{ fontFamily: FONT.display, fontWeight: 500, fontSize: 30, color: COLOR.inkSoft }}>{COPY.builtWith}</div>
-        <Label color={COLOR.inkSoft} size={24}>10 min · daily</Label>
+        <div style={{ fontFamily: FONT.display, fontWeight: 600, fontSize: 44, color: COLOR.ink }}>{COPY.builtWith}</div>
       </div>
     </AbsoluteFill>
   );
