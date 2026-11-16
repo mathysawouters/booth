@@ -4,7 +4,7 @@ import { mutation, query } from "./_generated/server";
 import { friendIds } from "./friends";
 import { kidsOf, requireFamilyOf } from "./kids";
 import { withUrls } from "./legends";
-import { getUsername, requireUserId } from "./users";
+import { displayName, requireUserId } from "./users";
 
 const FEED_SIZE = 50;
 const MAX_CHEERS = 100;
@@ -33,12 +33,12 @@ export const familyFeed = query({
       .sort((a, b) => (b.completedAt ?? 0) - (a.completedAt ?? 0))
       .slice(0, FEED_SIZE);
 
-    const usernames = new Map<Id<"users">, Promise<string | null>>();
-    const username = (id: Id<"users">) => {
-      let name = usernames.get(id);
+    const names = new Map<Id<"users">, Promise<string | null>>();
+    const nameOf = (id: Id<"users">) => {
+      let name = names.get(id);
       if (name === undefined) {
-        name = getUsername(ctx, id);
-        usernames.set(id, name);
+        name = displayName(ctx, id);
+        names.set(id, name);
       }
       return name;
     };
@@ -53,11 +53,12 @@ export const familyFeed = query({
         return {
           ...(await withUrls(ctx, legend)),
           kidName: kid.name,
-          parentName: await username(kid.parent),
+          parentName: await nameOf(kid.parent),
           cheers: await Promise.all(
             cheers.map(async (cheer) => ({
               emoji: cheer.emoji,
-              userName: await username(cheer.user),
+              userName: await nameOf(cheer.user),
+              mine: cheer.user === userId,
             })),
           ),
         };

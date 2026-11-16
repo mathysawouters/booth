@@ -1,8 +1,7 @@
-import { useAuthActions } from '@convex-dev/auth/react';
 import { useMutation, useQuery } from 'convex/react';
 import { Image } from 'expo-image';
-import { useState } from 'react';
-import { FlatList, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { FlatList, Share, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { LeggySays } from '@/components/leggy';
@@ -10,6 +9,7 @@ import { Avatar, Body, Button, Card, Field, Tappable, Title } from '@/components
 import { BottomTabInset, Colors, Fonts, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { formatDay } from '@/lib/day';
 import { errorMessage } from '@/lib/errors';
+import { useWhenKeyboardShown } from '@/lib/keyboard';
 import { CATEGORY_ART, SKILLS } from '@/lib/legends';
 import type { Cheer, FeedLegend, LegendId } from '@/lib/types';
 import { api } from '../../../convex/_generated/api';
@@ -21,25 +21,42 @@ export default function FamilyScreen() {
   const feed = useQuery(api.family.familyFeed) as FeedLegend[] | undefined;
   const family = useQuery(api.friends.listFriends);
   const me = useQuery(api.users.me);
-  const addFriend = useMutation(api.friends.addFriend);
+  const ensureFamilyCode = useMutation(api.users.ensureFamilyCode);
+  const joinFamily = useMutation(api.friends.joinFamily);
   const cheer = useMutation(api.family.cheer);
-  const { signOut } = useAuthActions();
-  const [username, setUsername] = useState('');
-  const [inviting, setInviting] = useState(false);
+  const [code, setCode] = useState('');
+  const [joining, setJoining] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const list = useRef<FlatList<FeedLegend>>(null);
+  const joinY = useRef(0);
+  const whenKeyboardShown = useWhenKeyboardShown();
+  const familyCode = me?.familyCode ?? null;
+  const needsCode = me !== undefined && me !== null && familyCode === null;
 
-  async function invite() {
-    const name = username.trim().replace(/^@/, '');
+  useEffect(() => {
+    if (needsCode) {
+      ensureFamilyCode().catch((e) => setMessage(errorMessage(e)));
+    }
+  }, [needsCode, ensureFamilyCode]);
+
+  function share() {
+    if (familyCode === null) return;
+    void Share.share({
+      message: `Come follow our little legends! Get the Little Legends app, open the Family tab, and join our family with the code ${familyCode}. You'll see every adventure the moment it happens and can send cheers.`,
+    });
+  }
+
+  async function join() {
     setMessage(null);
-    setInviting(true);
+    setJoining(true);
     try {
-      await addFriend({ username: name });
-      setUsername('');
-      setMessage(`@${name} is in your family now.`);
+      const name = await joinFamily({ code });
+      setCode('');
+      setMessage(name !== null ? `You and ${name} are family now.` : "You're family now.");
     } catch (e) {
       setMessage(errorMessage(e));
     } finally {
-      setInviting(false);
+      setJoining(false);
     }
   }
 
@@ -56,6 +73,9 @@ export default function FamilyScreen() {
       style={styles.screen}
       data={feed ?? []}
       keyExtractor={(item) => item._id}
+      ref={list}
+      automaticallyAdjustKeyboardInsets
+      keyboardDismissMode="interactive"
       keyboardShouldPersistTaps="handled"
       contentContainerStyle={[
         styles.content,
@@ -65,38 +85,58 @@ export default function FamilyScreen() {
         <View style={styles.header}>
           <Title>Family</Title>
           <Card>
-            <Text style={styles.cardTitle}>Invite family</Text>
-            <Body muted>Grandma, uncles, the other parent: they see your legends and cheer.</Body>
-            <Field
-              placeholder="Their username"
-              value={username}
-              onChangeText={setUsername}
-              onSubmitEditing={invite}
-              returnKeyType="done"
-              editable={!inviting}
-            />
-            <Button
-              label="Invite"
-              icon="person-add"
-              variant="accent"
-              onPress={invite}
-              loading={inviting}
-              disabled={username.trim().length === 0}
-            />
-            {message !== null && <Body style={styles.bold}>{message}</Body>}
-            {family !== undefined && family.length > 0 && (
+            <Text style={styles.cardTitle}>Your family code</Text>
+            <Text style={styles.code} selectable accessibilityLabel={familyCode ?? 'Loading family code'}>
+              {familyCode ?? '…'}
+            </Text>
+            <Body muted>Grandma, uncles, the other parent: share this code and they see your legends and cheer.</Body>
+            <Button label="Share" icon="share-outline" variant="accent" onPress={share} disabled={familyCode === null} />
+          </Card>
+          <View
+            onLayout={(event) => {
+              joinY.current = event.nativeEvent.layout.y;
+            }}>
+            <Card>
+              <Text style={styles.cardTitle}>Join a family</Text>
+              <Body muted>Got a code from someone? Enter it here.</Body>
+              <Field
+                placeholder="STAR-4821"
+                value={code}
+                onChangeText={setCode}
+                onFocus={() =>
+                  whenKeyboardShown(() => list.current?.scrollToOffset({ offset: joinY.current, animated: true }))
+                }
+                onSubmitEditing={join}
+                autoCapitalize="characters"
+                returnKeyType="done"
+                editable={!joining}
+              />
+              <Button
+                label="Join"
+                icon="people"
+                variant="soft"
+                onPress={join}
+                loading={joining}
+                disabled={code.trim().length === 0}
+              />
+              {message !== null && <Body style={styles.bold}>{message}</Body>}
+            </Card>
+          </View>
+          {family !== undefined && family.length > 0 && (
+            <Card>
+              <Text style={styles.cardTitle}>In your family</Text>
               <View style={styles.members}>
                 {family.map((member) => (
                   <View key={member._id} style={styles.member}>
-                    <Avatar name={member.username ?? '?'} size={56} />
-                    <Text style={styles.memberName} numberOfLines={1}>
-                      @{member.username ?? 'unknown'}
+                    <Avatar name={member.name ?? '?'} size={56} />
+                    <Text style={styles.memberName} numberOfLines={2}>
+                      {member.name ?? 'Family'}
                     </Text>
                   </View>
                 ))}
               </View>
-            )}
-          </Card>
+            </Card>
+          )}
         </View>
       }
       ListEmptyComponent={
@@ -105,33 +145,19 @@ export default function FamilyScreen() {
         )
       }
       renderItem={({ item }) => (
-        <FeedCard item={item} myName={me?.username ?? null} onCheer={(emoji) => sendCheer(item._id, emoji)} />
+        <FeedCard item={item} onCheer={(emoji) => sendCheer(item._id, emoji)} />
       )}
-      ListFooterComponent={
-        <View style={styles.footer}>
-          <Body muted>Signed in as @{me?.username ?? '…'}</Body>
-          <Button label="Sign out" variant="soft" onPress={() => void signOut()} />
-        </View>
-      }
     />
   );
 }
 
-function FeedCard({
-  item,
-  myName,
-  onCheer,
-}: {
-  item: FeedLegend;
-  myName: string | null;
-  onCheer: (emoji: string) => void;
-}) {
+function FeedCard({ item, onCheer }: { item: FeedLegend; onCheer: (emoji: string) => void }) {
   const counts = new Map<string, number>();
   for (const { emoji } of item.cheers) {
     counts.set(emoji, (counts.get(emoji) ?? 0) + 1);
   }
   const names = [...new Set(item.cheers.map((c: Cheer) => c.userName).filter((n): n is string => n !== null))];
-  const mine = new Set(item.cheers.filter((c) => c.userName !== null && c.userName === myName).map((c) => c.emoji));
+  const mine = new Set(item.cheers.filter((c) => c.mine).map((c) => c.emoji));
 
   return (
     <Card style={styles.card}>
@@ -140,7 +166,7 @@ function FeedCard({
         <View style={styles.cardHeadText}>
           <Text style={styles.kid}>{item.kidName}</Text>
           <Text style={styles.meta}>
-            {item.parentName !== null ? `with @${item.parentName} · ` : ''}
+            {item.parentName !== null ? `with ${item.parentName} · ` : ''}
             {formatDay(item.day)}
           </Text>
         </View>
@@ -174,7 +200,7 @@ function FeedCard({
           </Tappable>
         ))}
       </View>
-      {names.length > 0 && <Body muted style={styles.cheeredBy}>Cheered by {names.map((n) => `@${n}`).join(', ')}</Body>}
+      {names.length > 0 && <Body muted style={styles.cheeredBy}>Cheered by {names.join(', ')}</Body>}
     </Card>
   );
 }
@@ -199,6 +225,15 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.display,
     fontSize: 22,
   },
+  code: {
+    color: Colors.black,
+    fontFamily: Fonts.displayBold,
+    fontSize: 44,
+    lineHeight: 52,
+    letterSpacing: 2,
+    textAlign: 'center',
+    paddingVertical: Spacing.two,
+  },
   bold: {
     fontFamily: Fonts.sansBold,
   },
@@ -216,6 +251,7 @@ const styles = StyleSheet.create({
     color: Colors.gray,
     fontFamily: Fonts.sansBold,
     fontSize: 13,
+    textAlign: 'center',
   },
   card: {
     padding: Spacing.three,
@@ -306,9 +342,5 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
     paddingHorizontal: Spacing.one,
-  },
-  footer: {
-    gap: Spacing.three,
-    paddingTop: Spacing.four,
   },
 });

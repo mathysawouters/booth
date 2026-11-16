@@ -1,0 +1,232 @@
+import { useMutation } from 'convex/react';
+import { type ComponentProps, useRef, useState } from 'react';
+import { ScrollView, type ScrollViewInstance, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import { Body, Button, Chip, Field, IconButton, Title } from '@/components/ui';
+import { Colors, Fonts, MaxContentWidth, Spacing } from '@/constants/theme';
+import { errorMessage } from '@/lib/errors';
+import { useScrollToEndOnKeyboard } from '@/lib/keyboard';
+import { useKids } from '@/lib/kids';
+import type { KidId } from '@/lib/types';
+import { api } from '../../convex/_generated/api';
+
+const INTERESTS = [
+  'Dinosaurs',
+  'Animals',
+  'Space',
+  'Cars',
+  'Princesses',
+  'Lego',
+  'Drawing',
+  'Music',
+  'Football',
+  'Cooking',
+  'Nature',
+  'Robots',
+];
+
+const AGES = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+
+export function KidForm({
+  title,
+  closeIcon,
+  closeLabel,
+  onClose,
+  onSaved,
+  askParentName,
+}: {
+  title: string;
+  closeIcon: ComponentProps<typeof IconButton>['icon'];
+  closeLabel: string;
+  onClose: () => void;
+  onSaved?: () => void;
+  askParentName?: boolean;
+}) {
+  const insets = useSafeAreaInsets();
+  const addKid = useMutation(api.kids.addKid);
+  const { select } = useKids();
+  const [name, setName] = useState('');
+  const [age, setAge] = useState<number | null>(null);
+  const [interests, setInterests] = useState<string[]>([]);
+  const [custom, setCustom] = useState('');
+  const [note, setNote] = useState('');
+  const [parentName, setParentName] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const scroll = useRef<ScrollViewInstance>(null);
+  const scrollToEndOnKeyboard = useScrollToEndOnKeyboard(scroll);
+
+  function toggle(interest: string) {
+    setInterests((list) => (list.includes(interest) ? list.filter((i) => i !== interest) : [...list, interest]));
+  }
+
+  function addCustom() {
+    const value = custom.trim();
+    if (value.length > 0 && !interests.includes(value)) {
+      setInterests([...interests, value]);
+    }
+    setCustom('');
+  }
+
+  async function save() {
+    if (age === null) return;
+    setError(null);
+    setSaving(true);
+    try {
+      const extra = custom.trim();
+      const id = (await addKid({
+        name: name.trim(),
+        age,
+        interests: extra.length > 0 && !interests.includes(extra) ? [...interests, extra] : interests,
+        note: note.trim().length > 0 ? note.trim() : undefined,
+        parentName: askParentName ? parentName.trim() || defaultParentName : undefined,
+      })) as KidId;
+      select(id);
+      onSaved?.();
+    } catch (e) {
+      setError(errorMessage(e));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const customInterests = interests.filter((i) => !INTERESTS.includes(i));
+  const defaultParentName = `${name.trim() || 'Your kid'}'s parent`;
+
+  return (
+    <ScrollView
+      ref={scroll}
+      style={styles.screen}
+      automaticallyAdjustKeyboardInsets
+      keyboardDismissMode="interactive"
+      keyboardShouldPersistTaps="handled"
+      contentContainerStyle={[
+        styles.content,
+        { paddingTop: insets.top + Spacing.three, paddingBottom: insets.bottom + Spacing.five },
+      ]}>
+      <View style={styles.top}>
+        <Title style={styles.title}>{title}</Title>
+        <IconButton icon={closeIcon} label={closeLabel} onPress={onClose} />
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.label}>Name</Text>
+        <Field placeholder="Their name" value={name} onChangeText={setName} autoCapitalize="words" />
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.label}>Age</Text>
+        <View style={styles.wrap}>
+          {AGES.map((a) => (
+            <Chip key={a} label={String(a)} selected={age === a} onPress={() => setAge(a)} />
+          ))}
+        </View>
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.label}>Loves</Text>
+        <View style={styles.wrap}>
+          {[...INTERESTS, ...customInterests].map((interest) => (
+            <Chip
+              key={interest}
+              label={interest}
+              selected={interests.includes(interest)}
+              onPress={() => toggle(interest)}
+            />
+          ))}
+        </View>
+        <Field
+          placeholder="Something else? Type and press enter"
+          value={custom}
+          onChangeText={setCustom}
+          onSubmitEditing={addCustom}
+          returnKeyType="done"
+          submitBehavior="submit"
+        />
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.label}>Anything Leggy should know? (optional)</Text>
+        <Field
+          placeholder="Shy with new people, scared of the dark…"
+          value={note}
+          onChangeText={setNote}
+          onFocus={scrollToEndOnKeyboard}
+          autoCapitalize="sentences"
+          autoCorrect
+          multiline
+          style={styles.note}
+        />
+      </View>
+
+      {askParentName && (
+        <View style={styles.section}>
+          <Text style={styles.label}>Your name (optional)</Text>
+          <Body muted>Family sees this next to your legends.</Body>
+          <Field
+            placeholder={defaultParentName}
+            value={parentName}
+            onChangeText={setParentName}
+            onFocus={scrollToEndOnKeyboard}
+            autoCapitalize="words"
+            returnKeyType="done"
+          />
+        </View>
+      )}
+
+      {error !== null && <Body style={styles.error}>{error}</Body>}
+      <Button
+        label="Save"
+        variant="accent"
+        onPress={save}
+        loading={saving}
+        disabled={name.trim().length === 0 || age === null}
+      />
+    </ScrollView>
+  );
+}
+
+const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: Colors.white,
+  },
+  content: {
+    width: '100%',
+    maxWidth: MaxContentWidth,
+    alignSelf: 'center',
+    paddingHorizontal: Spacing.four,
+    gap: Spacing.four,
+  },
+  top: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: Spacing.three,
+  },
+  title: {
+    flex: 1,
+  },
+  section: {
+    gap: Spacing.three,
+  },
+  label: {
+    color: Colors.black,
+    fontFamily: Fonts.display,
+    fontSize: 20,
+  },
+  wrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.two,
+  },
+  note: {
+    minHeight: 100,
+    paddingTop: Spacing.three,
+    textAlignVertical: 'top',
+  },
+  error: {
+    fontFamily: Fonts.sansBold,
+  },
+});

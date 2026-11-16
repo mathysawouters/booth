@@ -46,7 +46,10 @@ export type Category = Infer<typeof categoryValidator>;
 export type Kind = Infer<typeof kindValidator>;
 
 export default defineSchema({
-  users: defineTable({}),
+  users: defineTable({
+    name: v.optional(v.string()),
+    familyCode: v.optional(v.string()),
+  }).index("by_familyCode", ["familyCode"]),
 
   friendships: defineTable({
     from: v.id("users"),

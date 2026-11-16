@@ -1,8 +1,7 @@
 import { ConvexError, v } from "convex/values";
-import { components } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { mutation, query, type QueryCtx } from "./_generated/server";
-import { getUsername, requireUserId } from "./users";
+import { displayName, normalizeFamilyCode, requireUserId } from "./users";
 
 const MAX_FRIENDS = 500;
 
@@ -29,27 +28,32 @@ export async function areFriends(
   return row !== null;
 }
 
-export const addFriend = mutation({
-  args: { username: v.string() },
-  handler: async (ctx, { username }) => {
+export const joinFamily = mutation({
+  args: { code: v.string() },
+  returns: v.union(v.string(), v.null()),
+  handler: async (ctx, { code }) => {
     const userId = await requireUserId(ctx);
-    const friendId = (await ctx.runQuery(
-      components.authUsername.public.getUserIdByUsername,
-      { username: username.trim() },
-    )) as Id<"users"> | null;
-    if (friendId === null) {
-      throw new ConvexError("No user with that username");
+    const normalized = normalizeFamilyCode(code);
+    if (normalized === null) {
+      throw new ConvexError("That doesn't look like a family code. It looks like STAR-4821");
     }
-    if (friendId === userId) {
-      throw new ConvexError("You can't add yourself");
+    const friend = await ctx.db
+      .query("users")
+      .withIndex("by_familyCode", (q) => q.eq("familyCode", normalized))
+      .unique();
+    if (friend === null) {
+      throw new ConvexError("No family with that code. Check it and try again");
     }
-    if (!(await areFriends(ctx, userId, friendId))) {
-      await ctx.db.insert("friendships", { from: userId, to: friendId });
+    if (friend._id === userId) {
+      throw new ConvexError("That's your own code. Share it with your family!");
     }
-    if (!(await areFriends(ctx, friendId, userId))) {
-      await ctx.db.insert("friendships", { from: friendId, to: userId });
+    if (!(await areFriends(ctx, userId, friend._id))) {
+      await ctx.db.insert("friendships", { from: userId, to: friend._id });
     }
-    return friendId;
+    if (!(await areFriends(ctx, friend._id, userId))) {
+      await ctx.db.insert("friendships", { from: friend._id, to: userId });
+    }
+    return await displayName(ctx, friend._id);
   },
 });
 
@@ -59,7 +63,7 @@ export const listFriends = query({
     const userId = await requireUserId(ctx);
     const ids = await friendIds(ctx, userId);
     return await Promise.all(
-      ids.map(async (id) => ({ _id: id, username: await getUsername(ctx, id) })),
+      ids.map(async (id) => ({ _id: id, name: await displayName(ctx, id) })),
     );
   },
 });
