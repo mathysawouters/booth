@@ -147,7 +147,7 @@ export default function DoneScreen() {
           <XpCounter xp={result?.xp ?? legend.xp} skill={result?.skill ?? legend.skill} />
           <View style={styles.photos}>
             <Polaroid uri={yourPhoto} label={name} tilt="-3deg" />
-            <Polaroid uri={legend.challengeImageUrl} fallback={CATEGORY_ART[legend.category]} label="Leggy" tilt="3deg" />
+            <Polaroid uri={legend.challengeImageUrl} fallback={CATEGORY_ART[legend.category]} label="Tonight's idea" tilt="3deg" />
           </View>
           {quoteText !== null && <Text style={styles.quote}>“{quoteText}”</Text>}
           <SkillPanel kid={kid} name={name} highlight={result?.skill ?? legend.skill} />

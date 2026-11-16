@@ -126,9 +126,13 @@ export const getWithUrls = internalQuery({
   },
 });
 
-export const getLegend = internalQuery({
+export const pictureContext = internalQuery({
   args: { legend: v.id("legends") },
-  handler: async (ctx, { legend }) => await ctx.db.get("legends", legend),
+  handler: async (ctx, { legend: legendId }) => {
+    const legend = await ctx.db.get("legends", legendId);
+    const kid = legend && (await ctx.db.get("kids", legend.kid));
+    return legend && kid ? { legend, age: kid.age } : null;
+  },
 });
 
 export const memoryContext = internalQuery({
@@ -184,9 +188,7 @@ export const insertLegend = internalMutation({
       status: "open",
       createdAt: Date.now(),
     });
-    if (args.challenge) {
-      await ctx.scheduler.runAfter(0, internal.legends.drawLeggyFail, { legend: legendId });
-    }
+    await ctx.scheduler.runAfter(0, internal.legends.drawTonightPicture, { legend: legendId });
     return legendId;
   },
 });
@@ -326,19 +328,26 @@ async function generateDraft(args: {
   };
 }
 
-export const drawLeggyFail = internalAction({
+export const drawTonightPicture = internalAction({
   args: { legend: v.id("legends") },
   handler: async (ctx, { legend: legendId }) => {
-    const legend: Doc<"legends"> | null = await ctx.runQuery(internal.legends.getLegend, {
-      legend: legendId,
-    });
-    if (legend === null || !legend.challenge || legend.challengeImage !== undefined) {
+    const context: { legend: Doc<"legends">; age: number } | null = await ctx.runQuery(
+      internal.legends.pictureContext,
+      { legend: legendId },
+    );
+    if (context === null || context.legend.challengeImage !== undefined) {
       return null;
     }
+    const { legend, age } = context;
     try {
       const image = await openaiImage(
-        `A deliberately clumsy, cute cartoon of ${LEGGY}. Leggy tried "${legend.title}" and it went hilariously wrong: ${legend.challenge}. Show the funny failed attempt. Bright, friendly kids' picture-book style, simple shapes, soft colors, no text, safe for young children.`,
-        "low",
+        [
+          `A candid, natural smartphone photo of a parent and a young kid, about ${age} years old, happily doing tonight's activity together at home or nearby: "${legend.title}". ${legend.steps.slice(0, 3).join(" ")}`,
+          "Warm evening light. Slightly imperfect like a real phone picture: a little grain, casual off-center framing, everyday clutter in the background.",
+          "Shot from the side or from behind so their faces are not the focus.",
+          "No text, no logos.",
+        ].join(" "),
+        "medium",
       );
       if (image === null) {
         return null;
@@ -349,7 +358,7 @@ export const drawLeggyFail = internalAction({
         image: stored,
       });
     } catch (error) {
-      console.warn(`Leggy image failed: ${String(error)}`);
+      console.warn(`Tonight's picture failed: ${String(error)}`);
     }
     return null;
   },
