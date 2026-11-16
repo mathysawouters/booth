@@ -33,7 +33,7 @@ export default function BookScreen() {
       contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + BottomTabInset + Spacing.five }]}
       ListHeaderComponent={
         <View style={styles.header}>
-          <Hero color={Colors.pink}>
+          <Hero>
             <LeggySays pose="reading" size={112}>
               {kid === null
                 ? 'Add your kid on Today first!'

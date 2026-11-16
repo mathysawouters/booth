@@ -1,21 +1,21 @@
 import { useAction, useMutation, useQuery } from 'convex/react';
 import { router } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
-import { ScrollView, type ScrollViewInstance, StyleSheet, View } from 'react-native';
+import { useRef, useState } from 'react';
+import { ScrollView, type ScrollViewInstance, StyleSheet, Text, View } from 'react-native';
 import Animated, { ZoomIn } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { KidSwitcher } from '@/components/kid-switcher';
-import { LeggySays } from '@/components/leggy';
+import { Leggy, LeggySays } from '@/components/leggy';
 import { LegendView } from '@/components/legend-view';
 import { Picker } from '@/components/picker';
 import { SkillPanel } from '@/components/skill-panel';
-import { StreakCard } from '@/components/streak-card';
+import { StreakSign } from '@/components/streak-sign';
+import { TonightCard } from '@/components/tonight-card';
 import { Body, Button, Hero, Loading, Screen } from '@/components/ui';
 import { BottomTabInset, Colors, Fonts, MaxContentWidth, Spacing } from '@/constants/theme';
 import { localDay } from '@/lib/day';
 import { errorMessage } from '@/lib/errors';
-import { successHaptic } from '@/lib/haptics';
 import { useKids } from '@/lib/kids';
 import type { Category, Kid, KidId, Legend, Mode } from '@/lib/types';
 import { api } from '../../../convex/_generated/api';
@@ -34,7 +34,7 @@ export default function TodayScreen() {
 
 function Welcome() {
   return (
-    <Screen color={Colors.lemon} style={styles.welcome}>
+    <Screen style={styles.welcome}>
       <LeggySays side="top" size={240} pose="waving">
         Hi, I&apos;m Leggy! Who&apos;s playing today?
       </LeggySays>
@@ -49,31 +49,23 @@ function KidToday({ kid, kids, onSelect }: { kid: Kid; kids: Kid[]; onSelect: (i
   const legend = useQuery(api.legends.legendToday, { kid: kid._id, day }) as Legend | null | undefined;
   const todaysLegend = useAction(api.legends.todaysLegend);
   const skipLegend = useMutation(api.legends.skipLegend);
-  const [picking, setPicking] = useState(false);
+  const [mode, setMode] = useState<Mode>('real');
+  const [started, setStarted] = useState(false);
   const [fresh, setFresh] = useState<Legend | null>(null);
   const [waiting, setWaiting] = useState(false);
-  const [revealing, setRevealing] = useState(false);
   const [rerolling, setRerolling] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const scroll = useRef<ScrollViewInstance>(null);
-
-  useEffect(() => {
-    if (!revealing) return;
-    const timer = setTimeout(() => setRevealing(false), 1400);
-    return () => clearTimeout(timer);
-  }, [revealing]);
 
   const current = fresh !== null && legend?._id !== fresh._id ? fresh : legend;
 
   async function generate(choice: { mode: Mode; category: Category; minutes: number }) {
     setError(null);
     setWaiting(true);
+    setStarted(false);
     scroll.current?.scrollTo({ y: 0, animated: true });
     try {
       setFresh((await todaysLegend({ kid: kid._id, day, ...choice })) as Legend);
-      setPicking(false);
-      setRevealing(true);
-      successHaptic();
     } catch (e) {
       setError(errorMessage(e));
     } finally {
@@ -107,6 +99,7 @@ function KidToday({ kid, kids, onSelect }: { kid: Kid; kids: Kid[]; onSelect: (i
     try {
       await skipLegend({ legend: open._id });
       setFresh(null);
+      setStarted(false);
     } catch (e) {
       setError(errorMessage(e));
     }
@@ -118,30 +111,23 @@ function KidToday({ kid, kids, onSelect }: { kid: Kid; kids: Kid[]; onSelect: (i
 
   const open = current?.status === 'open' ? current : null;
   const params = { kid: kid._id, day };
-  const busy = waiting ? 'waiting' : revealing ? 'open' : null;
-  const showLegend = open !== null && !picking && busy === null;
 
   return (
     <ScrollView
       ref={scroll}
       style={styles.screen}
       contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + BottomTabInset + Spacing.five }]}>
-      <Hero color={Colors.green}>
-        <LeggySays size={112} sun={Colors.lemon} pose={busy !== null ? 'thinking' : 'waving'}>
-          {busy !== null
-            ? "Ooh, what's inside?"
-            : showLegend
-              ? `Ready, ${kid.name}? Let's go!`
-              : current?.status === 'done'
-                ? `We did it, ${kid.name}!`
-                : `What are we doing tonight, ${kid.name}?`}
-        </LeggySays>
+      <Hero>
+        <Text style={styles.title}>Today with {kid.name}</Text>
+        <View style={styles.scene}>
+          <Leggy size={150} pose={waiting ? 'thinking' : current?.status === 'done' ? 'cheering' : 'waving'} />
+          <StreakSign kid={kid._id} day={day} />
+        </View>
       </Hero>
       <View style={styles.body}>
         <KidSwitcher kids={kids} selected={kid._id} onSelect={onSelect} />
-        <StreakCard kid={kid._id} day={day} />
         {error !== null && <Body style={styles.error}>{error}</Body>}
-        {showLegend ? (
+        {open !== null && started && !waiting ? (
           <Animated.View entering={ZoomIn.springify().damping(14)}>
             <LegendView
               legend={open}
@@ -150,17 +136,22 @@ function KidToday({ kid, kids, onSelect }: { kid: Kid; kids: Kid[]; onSelect: (i
               onRead={() => router.push({ pathname: '/story', params })}
               onDone={() => router.push({ pathname: '/done', params })}
               onReroll={() => reroll(open)}
-              onPicker={() => setPicking(true)}
+              onPicker={() => setStarted(false)}
               onSkip={() => skip(open)}
             />
           </Animated.View>
         ) : (
-          <Picker
-            doneToday={current?.status === 'done'}
-            busy={busy}
-            onBack={open !== null ? () => setPicking(false) : undefined}
-            onPick={generate}
-          />
+          <>
+            <TonightCard
+              legend={waiting ? null : open}
+              waiting={waiting}
+              onUnwrap={() => generate({ mode, category: 'surprise', minutes: 15 })}
+              onStart={() => setStarted(true)}
+            />
+            {!waiting && (
+              <Picker doneToday={current?.status === 'done'} mode={mode} onMode={setMode} onPick={generate} />
+            )}
+          </>
         )}
         <SkillPanel kid={kid._id} name={kid.name} />
       </View>
@@ -178,9 +169,24 @@ const styles = StyleSheet.create({
     maxWidth: MaxContentWidth,
     alignSelf: 'center',
   },
+  title: {
+    color: Colors.white,
+    fontFamily: Fonts.displayBold,
+    fontSize: 36,
+    lineHeight: 42,
+    textAlign: 'center',
+    textShadowColor: 'rgba(27, 42, 18, 0.28)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 6,
+  },
+  scene: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-around',
+    paddingLeft: Spacing.five,
+  },
   body: {
     paddingHorizontal: Spacing.four,
-    paddingTop: Spacing.three,
     gap: Spacing.three,
   },
   welcome: {

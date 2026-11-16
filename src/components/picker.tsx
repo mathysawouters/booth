@@ -3,7 +3,6 @@ import { Image } from 'expo-image';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import Animated, {
-  FadeIn,
   FadeInRight,
   interpolateColor,
   useAnimatedStyle,
@@ -12,13 +11,11 @@ import Animated, {
   ZoomIn,
 } from 'react-native-reanimated';
 
-import { Leggy } from '@/components/leggy';
-import { MysteryBox } from '@/components/mystery-box';
-import { Body, Button, Chunky, Tappable, TextButton } from '@/components/ui';
+import { Body, Button, Chunky, Tappable } from '@/components/ui';
 import { CATEGORY_TONE, Colors, Fonts, Radius, Spacing, Tones } from '@/constants/theme';
 import { formatTime } from '@/lib/day';
 import { findFreeSlot, type Slot } from '@/lib/free-slot';
-import { CATEGORY_ART, menuFor, WAITING_LINES } from '@/lib/legends';
+import { CATEGORY_ART, menuFor } from '@/lib/legends';
 import type { Category, Mode } from '@/lib/types';
 
 const MODES = [
@@ -28,39 +25,26 @@ const MODES = [
 
 export function Picker({
   doneToday,
-  busy,
-  onBack,
+  mode,
+  onMode,
   onPick,
 }: {
   doneToday: boolean;
-  busy: 'waiting' | 'open' | null;
-  onBack?: () => void;
+  mode: Mode;
+  onMode: (mode: Mode) => void;
   onPick: (choice: { mode: Mode; category: Category; minutes: number }) => void;
 }) {
-  const [mode, setMode] = useState<Mode>('real');
-  const [themes, setThemes] = useState(onBack !== undefined);
   const [slot, setSlot] = useState<Slot | null>(null);
   const [slotMessage, setSlotMessage] = useState<string | null>(null);
   const [finding, setFinding] = useState(false);
-  const [line, setLine] = useState(() => Math.floor(Math.random() * WAITING_LINES.length));
-  const shift = useSharedValue(0);
+  const shift = useSharedValue(mode === 'real' ? 0 : 1);
 
   useEffect(() => {
     shift.set(withSpring(mode === 'real' ? 0 : 1, { damping: 16, stiffness: 180 }));
   }, [mode, shift]);
 
-  useEffect(() => {
-    if (busy !== 'waiting') return;
-    const timer = setInterval(() => setLine((i) => (i + 1) % WAITING_LINES.length), 2400);
-    return () => clearInterval(timer);
-  }, [busy]);
-
   const thumb = useAnimatedStyle(() => ({
     left: `${shift.get() * 50}%`,
-    backgroundColor: interpolateColor(shift.get(), [0, 1], [Colors.lemon, Colors.mint]),
-    borderColor: interpolateColor(shift.get(), [0, 1], [Colors.lemonDark, Colors.mintDark]),
-  }));
-  const card = useAnimatedStyle(() => ({
     backgroundColor: interpolateColor(shift.get(), [0, 1], [Colors.lemon, Colors.mint]),
     borderColor: interpolateColor(shift.get(), [0, 1], [Colors.lemonDark, Colors.mintDark]),
   }));
@@ -88,33 +72,9 @@ export function Picker({
     onPick({ mode, category, minutes: slot?.minutes ?? 15 });
   }
 
-  const surprise = (
-    <Tappable
-      accessibilityLabel="Tonight's surprise"
-      onPress={() => pick('surprise')}
-      disabled={busy !== null}
-      scaleTo={0.97}>
-      <Animated.View style={[styles.card, card]}>
-        <Text style={styles.cardTitle}>Tonight&apos;s surprise!</Text>
-        <View style={styles.stage}>
-          <Leggy size={132} pose="thinking" bouncy={busy === 'waiting'} />
-          <MysteryBox state={busy === 'waiting' ? 'shaking' : busy === 'open' ? 'open' : 'idle'} />
-        </View>
-        <View style={styles.cta}>
-          <Text style={styles.ctaLabel}>
-            {busy === 'waiting' ? WAITING_LINES[line] : busy === 'open' ? 'Ta-da!' : 'Tap to open'}
-          </Text>
-        </View>
-      </Animated.View>
-    </Tappable>
-  );
-
-  if (busy !== null) {
-    return surprise;
-  }
-
   return (
     <View style={styles.container}>
+      <Text style={styles.heading}>Or pick something else</Text>
       {doneToday && (
         <View style={styles.note}>
           <Ionicons name="checkmark-circle" size={24} color={Colors.greenDeep} />
@@ -129,7 +89,7 @@ export function Picker({
             key={option.id}
             accessibilityLabel={option.label}
             accessibilityState={{ selected: mode === option.id }}
-            onPress={() => setMode(option.id)}
+            onPress={() => onMode(option.id)}
             style={styles.switchHalf}>
             <Ionicons name={option.icon} size={20} color={Colors.black} />
             <Text style={styles.switchLabel}>{option.label}</Text>
@@ -137,26 +97,11 @@ export function Picker({
         ))}
       </View>
 
-      {surprise}
-
-      <View style={styles.row}>
-        <View style={styles.flex}>
-          <Button
-            label="Pick a theme"
-            icon={themes ? 'chevron-up' : 'chevron-down'}
-            variant="soft"
-            small
-            onPress={() => setThemes(!themes)}
-          />
-        </View>
-        <View style={styles.flex}>
-          {finding ? (
-            <ActivityIndicator color={Colors.greenDark} style={styles.finding} />
-          ) : (
-            <Button label="Find 15 min" icon="calendar-outline" variant="soft" small onPress={find} />
-          )}
-        </View>
-      </View>
+      {finding ? (
+        <ActivityIndicator color={Colors.greenDark} style={styles.finding} />
+      ) : (
+        <Button label="Find my 15 minutes" icon="calendar-outline" variant="soft" small onPress={find} />
+      )}
       {slot !== null && (
         <View style={styles.note}>
           <Ionicons name="time" size={22} color={Colors.greenDeep} />
@@ -167,42 +112,38 @@ export function Picker({
       )}
       {slotMessage !== null && <Body muted>{slotMessage}</Body>}
 
-      {themes && (
-        <Animated.View entering={FadeIn.duration(200)} style={[styles.panel, panel]}>
-          {mode === 'real' ? (
-            <View key="real" style={styles.grid}>
-              {menuFor('real', new Date()).map((item, i) => (
-                <Animated.View key={item.category} entering={ZoomIn.delay(i * 40).springify().damping(13)} style={styles.tile}>
-                  <Chunky
-                    accessibilityLabel={item.label}
-                    onPress={() => pick(item.category)}
-                    tone={CATEGORY_TONE[item.category]}
-                    faceStyle={styles.tileFace}>
-                    <Image source={CATEGORY_ART[item.category]} style={styles.tileArt} contentFit="contain" />
-                    <Text style={styles.tileLabel}>{item.label}</Text>
-                  </Chunky>
-                </Animated.View>
-              ))}
-            </View>
-          ) : (
-            <View key="phone" style={styles.list}>
-              {menuFor('phone', new Date()).map((item, i) => (
-                <Animated.View key={item.category} entering={FadeInRight.delay(i * 60).springify().damping(15)}>
-                  <Chunky accessibilityLabel={item.label} onPress={() => pick(item.category)} faceStyle={styles.rowFace}>
-                    <View style={[styles.thumbnail, { backgroundColor: Tones[CATEGORY_TONE[item.category]].face }]}>
-                      <Image source={CATEGORY_ART[item.category]} style={styles.thumbnailArt} contentFit="contain" />
-                    </View>
-                    <Text style={[styles.tileLabel, styles.flex]}>{item.label}</Text>
-                    <Ionicons name="play-circle" size={30} color={Colors.mintDark} />
-                  </Chunky>
-                </Animated.View>
-              ))}
-            </View>
-          )}
-        </Animated.View>
-      )}
-
-      {onBack !== undefined && <TextButton label="Back to today's legend" onPress={onBack} />}
+      <Animated.View style={[styles.panel, panel]}>
+        {mode === 'real' ? (
+          <View key="real" style={styles.grid}>
+            {menuFor('real', new Date()).map((item, i) => (
+              <Animated.View key={item.category} entering={ZoomIn.delay(i * 40).springify().damping(13)} style={styles.tile}>
+                <Chunky
+                  accessibilityLabel={item.label}
+                  onPress={() => pick(item.category)}
+                  tone={CATEGORY_TONE[item.category]}
+                  faceStyle={styles.tileFace}>
+                  <Image source={CATEGORY_ART[item.category]} style={styles.tileArt} contentFit="contain" />
+                  <Text style={styles.tileLabel}>{item.label}</Text>
+                </Chunky>
+              </Animated.View>
+            ))}
+          </View>
+        ) : (
+          <View key="phone" style={styles.list}>
+            {menuFor('phone', new Date()).map((item, i) => (
+              <Animated.View key={item.category} entering={FadeInRight.delay(i * 60).springify().damping(15)}>
+                <Chunky accessibilityLabel={item.label} onPress={() => pick(item.category)} faceStyle={styles.rowFace}>
+                  <View style={[styles.thumbnail, { backgroundColor: Tones[CATEGORY_TONE[item.category]].face }]}>
+                    <Image source={CATEGORY_ART[item.category]} style={styles.thumbnailArt} contentFit="contain" />
+                  </View>
+                  <Text style={[styles.tileLabel, styles.flex]}>{item.label}</Text>
+                  <Ionicons name="play-circle" size={30} color={Colors.mintDark} />
+                </Chunky>
+              </Animated.View>
+            ))}
+          </View>
+        )}
+      </Animated.View>
     </View>
   );
 }
@@ -213,6 +154,13 @@ const styles = StyleSheet.create({
   },
   flex: {
     flex: 1,
+  },
+  heading: {
+    color: Colors.black,
+    fontFamily: Fonts.displayBold,
+    fontSize: 24,
+    lineHeight: 30,
+    marginTop: Spacing.two,
   },
   note: {
     flexDirection: 'row',
@@ -257,47 +205,6 @@ const styles = StyleSheet.create({
     color: Colors.black,
     fontFamily: Fonts.display,
     fontSize: 16,
-  },
-  card: {
-    alignItems: 'center',
-    gap: Spacing.two,
-    borderRadius: 32,
-    borderBottomWidth: 8,
-    paddingTop: Spacing.four,
-    paddingBottom: Spacing.three,
-    paddingHorizontal: Spacing.three,
-    overflow: 'hidden',
-  },
-  cardTitle: {
-    color: Colors.black,
-    fontFamily: Fonts.displayBold,
-    fontSize: 28,
-    lineHeight: 34,
-    textAlign: 'center',
-  },
-  stage: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    justifyContent: 'center',
-    gap: Spacing.two,
-    paddingTop: Spacing.five,
-  },
-  cta: {
-    backgroundColor: Colors.white,
-    borderRadius: Radius.pill,
-    paddingHorizontal: Spacing.four,
-    paddingVertical: 10,
-    marginTop: Spacing.two,
-  },
-  ctaLabel: {
-    color: Colors.black,
-    fontFamily: Fonts.display,
-    fontSize: 18,
-    textAlign: 'center',
-  },
-  row: {
-    flexDirection: 'row',
-    gap: Spacing.two,
   },
   finding: {
     minHeight: 48,
