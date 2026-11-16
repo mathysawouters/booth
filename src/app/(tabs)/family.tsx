@@ -5,7 +5,7 @@ import { FlatList, Share, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { LeggySays } from '@/components/leggy';
-import { Avatar, Body, Button, Card, Field, Tappable, Title } from '@/components/ui';
+import { Avatar, Body, Button, Card, Field, Hero, Tappable } from '@/components/ui';
 import { BottomTabInset, Colors, Fonts, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { formatDay } from '@/lib/day';
 import { errorMessage } from '@/lib/errors';
@@ -77,28 +77,27 @@ export default function FamilyScreen() {
       automaticallyAdjustKeyboardInsets
       keyboardDismissMode="interactive"
       keyboardShouldPersistTaps="handled"
-      contentContainerStyle={[
-        styles.content,
-        { paddingTop: insets.top + Spacing.three, paddingBottom: insets.bottom + BottomTabInset + Spacing.five },
-      ]}
+      contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + BottomTabInset + Spacing.five }]}
       ListHeaderComponent={
         <View style={styles.header}>
-          <Title>Family</Title>
+          <Hero color={Colors.mint} style={styles.hero}>
+            <LeggySays pose="proud" size={112}>
+              {feed !== undefined && feed.length === 0 ? 'Finished legends show up here!' : 'Bring the whole gang!'}
+            </LeggySays>
+          </Hero>
           <Card>
             <Text style={styles.cardTitle}>Your family code</Text>
             <Text style={styles.code} selectable accessibilityLabel={familyCode ?? 'Loading family code'}>
               {familyCode ?? '…'}
             </Text>
-            <Body muted>Grandma, uncles, the other parent: share this code and they see your legends and cheer.</Body>
-            <Button label="Share" icon="share-outline" variant="accent" onPress={share} disabled={familyCode === null} />
+            <Button label="Share with family" icon="share-outline" variant="accent" onPress={share} disabled={familyCode === null} />
           </Card>
           <View
             onLayout={(event) => {
               joinY.current = event.nativeEvent.layout.y;
             }}>
             <Card>
-              <Text style={styles.cardTitle}>Join a family</Text>
-              <Body muted>Got a code from someone? Enter it here.</Body>
+              <Text style={styles.cardTitle}>Got a code?</Text>
               <Field
                 placeholder="STAR-4821"
                 value={code}
@@ -138,11 +137,6 @@ export default function FamilyScreen() {
             </Card>
           )}
         </View>
-      }
-      ListEmptyComponent={
-        feed === undefined ? undefined : (
-          <LeggySays pose="waving">Finished legends from your family show up here. Go do one!</LeggySays>
-        )
       }
       renderItem={({ item }) => (
         <FeedCard item={item} onCheer={(emoji) => sendCheer(item._id, emoji)} />
@@ -208,7 +202,7 @@ function FeedCard({ item, onCheer }: { item: FeedLegend; onCheer: (emoji: string
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.paper,
   },
   content: {
     width: '100%',
@@ -219,6 +213,9 @@ const styles = StyleSheet.create({
   },
   header: {
     gap: Spacing.three,
+  },
+  hero: {
+    marginHorizontal: -Spacing.four,
   },
   cardTitle: {
     color: Colors.black,
@@ -233,6 +230,9 @@ const styles = StyleSheet.create({
     letterSpacing: 2,
     textAlign: 'center',
     paddingVertical: Spacing.two,
+    backgroundColor: Colors.lemon,
+    borderRadius: Radius.field,
+    overflow: 'hidden',
   },
   bold: {
     fontFamily: Fonts.sansBold,
@@ -277,7 +277,7 @@ const styles = StyleSheet.create({
   },
   frame: {
     borderRadius: Radius.field,
-    backgroundColor: Colors.soft,
+    backgroundColor: Colors.lemon,
     overflow: 'hidden',
   },
   photo: {
@@ -288,7 +288,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 12,
     bottom: 12,
-    backgroundColor: Colors.green,
+    backgroundColor: Colors.pink,
     borderRadius: Radius.pill,
     paddingHorizontal: 14,
     paddingVertical: 6,
@@ -322,6 +322,8 @@ const styles = StyleSheet.create({
     minHeight: 64,
     borderRadius: 20,
     backgroundColor: Colors.soft,
+    borderBottomWidth: 4,
+    borderColor: Colors.line,
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
@@ -329,6 +331,7 @@ const styles = StyleSheet.create({
   },
   cheerMine: {
     backgroundColor: Colors.green,
+    borderColor: Colors.greenDark,
   },
   emoji: {
     fontSize: 30,

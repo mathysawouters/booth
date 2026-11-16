@@ -55,10 +55,8 @@ export function VoiceClip({ uri, onChange }: { uri: string | null; onChange: (ur
       <View style={styles.row}>
         {state.isRecording ? (
           <Tappable onPress={() => recorder.stop()} style={[styles.button, styles.recording]}>
-            <Ionicons name="stop" size={22} color={Colors.white} />
-            <Text style={[styles.label, styles.labelLight]}>
-              Stop · {MAX_SECONDS - seconds}s left
-            </Text>
+            <Ionicons name="stop" size={22} color={Colors.black} />
+            <Text style={styles.label}>Stop · {MAX_SECONDS - seconds}s left</Text>
           </Tappable>
         ) : (
           <Tappable onPress={start} style={styles.button}>
@@ -101,25 +99,28 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: Spacing.two,
-    backgroundColor: Colors.soft,
+    backgroundColor: Colors.white,
     borderRadius: Radius.pill,
+    borderWidth: 2,
+    borderBottomWidth: 5,
+    borderColor: Colors.line,
   },
   recording: {
-    backgroundColor: Colors.black,
+    backgroundColor: Colors.pink,
+    borderColor: Colors.pinkDark,
   },
   label: {
     color: Colors.black,
-    fontFamily: Fonts.sansBold,
+    fontFamily: Fonts.display,
     fontSize: 16,
-  },
-  labelLight: {
-    color: Colors.white,
   },
   round: {
     width: 54,
     height: 54,
     borderRadius: 27,
-    backgroundColor: Colors.soft,
+    backgroundColor: Colors.lemon,
+    borderBottomWidth: 4,
+    borderColor: Colors.lemonDark,
     alignItems: 'center',
     justifyContent: 'center',
   },

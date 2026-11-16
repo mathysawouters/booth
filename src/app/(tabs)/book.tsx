@@ -6,8 +6,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { KidSwitcher } from '@/components/kid-switcher';
 import { LeggySays } from '@/components/leggy';
-import { Card, Loading, Title } from '@/components/ui';
-import { BottomTabInset, Colors, Fonts, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
+import { Card, Hero, Loading } from '@/components/ui';
+import { BottomTabInset, BRIGHT_TONES, Colors, Fonts, MaxContentWidth, Radius, Spacing, Tones } from '@/constants/theme';
 import { formatDay } from '@/lib/day';
 import { CATEGORY_ART, SKILLS } from '@/lib/legends';
 import { useKids } from '@/lib/kids';
@@ -30,32 +30,35 @@ export default function BookScreen() {
       style={styles.screen}
       data={legends ?? []}
       keyExtractor={(legend) => legend._id}
-      contentContainerStyle={[
-        styles.content,
-        { paddingTop: insets.top + Spacing.three, paddingBottom: insets.bottom + BottomTabInset + Spacing.five },
-      ]}
+      contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + BottomTabInset + Spacing.five }]}
       ListHeaderComponent={
         <View style={styles.header}>
-          <Title>Memory book</Title>
-          {kid !== null && <KidSwitcher kids={kids} selected={kid._id} onSelect={select} />}
+          <Hero color={Colors.pink}>
+            <LeggySays pose="reading" size={112}>
+              {kid === null
+                ? 'Add your kid on Today first!'
+                : legends === undefined || legends.length === 0
+                  ? `Your first legend lands here, ${kid.name}!`
+                  : `Look what we did, ${kid.name}!`}
+            </LeggySays>
+          </Hero>
+          {kid !== null && (
+            <View style={styles.padded}>
+              <KidSwitcher kids={kids} selected={kid._id} onSelect={select} />
+            </View>
+          )}
         </View>
       }
-      ListEmptyComponent={
-        <LeggySays pose="waving">
-          {kid === null
-            ? 'Add your kid on Today and your legends will land here.'
-            : `Finish your first legend with ${kid.name} and it lands right here.`}
-        </LeggySays>
-      }
-      renderItem={({ item, index }) => <Page legend={item} tilt={index % 2 === 0 ? '-1deg' : '1deg'} />}
+      renderItem={({ item, index }) => <Page legend={item} index={index} />}
     />
   );
 }
 
-function Page({ legend, tilt }: { legend: Legend; tilt: string }) {
+function Page({ legend, index }: { legend: Legend; index: number }) {
+  const tone = Tones[BRIGHT_TONES[index % BRIGHT_TONES.length]];
   return (
-    <Card style={[styles.card, { transform: [{ rotate: tilt }] }]}>
-      <View style={styles.frame}>
+    <Card style={[styles.card, { transform: [{ rotate: index % 2 === 0 ? '-1deg' : '1deg' }] }]}>
+      <View style={[styles.frame, { backgroundColor: tone.face }]}>
         {legend.photoUrl !== null ? (
           <Image source={{ uri: legend.photoUrl }} style={styles.photo} contentFit="cover" transition={200} />
         ) : (
@@ -70,7 +73,7 @@ function Page({ legend, tilt }: { legend: Legend; tilt: string }) {
           </View>
         )}
       </View>
-      <View style={styles.tape} />
+      <View style={[styles.tape, { backgroundColor: tone.edge }]} />
       <View style={styles.caption}>
         <Text style={styles.day}>{formatDay(legend.day)}</Text>
         <Text style={styles.title}>{legend.title}</Text>
@@ -83,25 +86,27 @@ function Page({ legend, tilt }: { legend: Legend; tilt: string }) {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.paper,
   },
   content: {
     width: '100%',
     maxWidth: MaxContentWidth,
     alignSelf: 'center',
-    paddingHorizontal: Spacing.four,
     gap: Spacing.four,
   },
   header: {
     gap: Spacing.three,
   },
+  padded: {
+    paddingHorizontal: Spacing.four,
+  },
   card: {
     padding: 12,
     gap: 0,
+    marginHorizontal: Spacing.four,
   },
   frame: {
     borderRadius: Radius.field,
-    backgroundColor: Colors.soft,
     overflow: 'hidden',
   },
   photo: {
@@ -115,8 +120,7 @@ const styles = StyleSheet.create({
     width: 92,
     height: 24,
     borderRadius: 4,
-    backgroundColor: Colors.green,
-    opacity: 0.7,
+    opacity: 0.85,
     transform: [{ rotate: '-3deg' }],
   },
   badge: {

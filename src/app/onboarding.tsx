@@ -5,7 +5,7 @@ import { KidForm } from '@/components/kid-form';
 export default function OnboardingScreen() {
   return (
     <KidForm
-      title="Who's your little legend?"
+      title="Who's my new friend?"
       closeIcon="arrow-back"
       closeLabel="Back"
       onClose={() => router.back()}

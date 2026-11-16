@@ -1,5 +1,5 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import type { ComponentProps, ReactNode } from 'react';
+import { type ComponentProps, type ReactNode, useEffect } from 'react';
 import {
   ActivityIndicator,
   Platform,
@@ -14,17 +14,18 @@ import {
   type TextProps,
   type ViewStyle,
 } from 'react-native';
-import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Colors, Fonts, MaxContentWidth, Radius, Shadow, Spacing } from '@/constants/theme';
+import { BRIGHT_TONES, Colors, Fonts, MaxContentWidth, Radius, Spacing, Tones, type Tone } from '@/constants/theme';
 import { tapHaptic } from '@/lib/haptics';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+const BOUNCE = { damping: 9, stiffness: 320 };
 
 export function Tappable({
   style,
-  scaleTo = 0.96,
+  scaleTo = 0.94,
   onPressIn,
   onPressOut,
   ...props
@@ -36,12 +37,12 @@ export function Tappable({
       accessibilityRole="button"
       {...props}
       onPressIn={(event) => {
-        scale.set(withSpring(scaleTo, { damping: 18, stiffness: 320 }));
+        scale.set(withTiming(scaleTo, { duration: 70 }));
         tapHaptic();
         onPressIn?.(event);
       }}
       onPressOut={(event) => {
-        scale.set(withSpring(1, { damping: 12, stiffness: 260 }));
+        scale.set(withSpring(1, BOUNCE));
         onPressOut?.(event);
       }}
       style={[style, animated]}
@@ -49,11 +50,82 @@ export function Tappable({
   );
 }
 
-export function Screen({ children, style }: { children: ReactNode; style?: ViewStyle }) {
+export function Chunky({
+  tone = 'white',
+  radius = Radius.tile,
+  depth = 6,
+  style,
+  faceStyle,
+  children,
+  onPressIn,
+  onPressOut,
+  ...props
+}: Omit<PressableProps, 'style' | 'children'> & {
+  tone?: Tone;
+  radius?: number;
+  depth?: number;
+  style?: StyleProp<ViewStyle>;
+  faceStyle?: StyleProp<ViewStyle>;
+  children: ReactNode;
+}) {
+  const pressed = useSharedValue(0);
+  const squash = useAnimatedStyle(() => ({
+    transform: [{ scaleX: 1 + pressed.get() * 0.03 }, { scaleY: 1 - pressed.get() * 0.05 }],
+  }));
+  const face = useAnimatedStyle(() => ({ transform: [{ translateY: pressed.get() * depth }] }));
+  const { face: color, edge } = Tones[tone];
+  return (
+    <AnimatedPressable
+      accessibilityRole="button"
+      {...props}
+      onPressIn={(event) => {
+        pressed.set(withTiming(1, { duration: 70 }));
+        tapHaptic();
+        onPressIn?.(event);
+      }}
+      onPressOut={(event) => {
+        pressed.set(withSpring(0, BOUNCE));
+        onPressOut?.(event);
+      }}
+      style={[{ paddingBottom: depth }, style, squash]}>
+      <View style={[styles.chunkyEdge, { top: depth, borderRadius: radius, backgroundColor: edge }]} />
+      <Animated.View
+        style={[
+          styles.chunkyFace,
+          { borderRadius: radius, backgroundColor: color },
+          tone === 'white' && styles.chunkyOutline,
+          faceStyle,
+          face,
+        ]}>
+        {children}
+      </Animated.View>
+    </AnimatedPressable>
+  );
+}
+
+export function Screen({
+  children,
+  style,
+  color = Colors.paper,
+}: {
+  children: ReactNode;
+  style?: ViewStyle;
+  color?: string;
+}) {
   const insets = useSafeAreaInsets();
   return (
-    <View style={[styles.screen, { paddingTop: insets.top + Spacing.three }]}>
+    <View style={[styles.screen, { backgroundColor: color, paddingTop: insets.top + Spacing.three }]}>
       <View style={[styles.content, style]}>{children}</View>
+    </View>
+  );
+}
+
+export function Hero({ color, children, style }: { color: string; children: ReactNode; style?: StyleProp<ViewStyle> }) {
+  const insets = useSafeAreaInsets();
+  return (
+    <View style={[styles.hero, { backgroundColor: color, paddingTop: insets.top + Spacing.three }, style]}>
+      <View style={[styles.heroOverscroll, { backgroundColor: color }]} />
+      {children}
     </View>
   );
 }
@@ -66,6 +138,8 @@ export function Body({ style, muted, ...props }: TextProps & { muted?: boolean }
   return <Text {...props} style={[styles.body, muted && styles.muted, style]} />;
 }
 
+const VARIANT_TONE = { accent: 'green', solid: 'pink', soft: 'white', lemon: 'lemon', mint: 'mint' } as const;
+
 export function Button({
   label,
   onPress,
@@ -73,30 +147,35 @@ export function Button({
   loading,
   icon,
   variant = 'solid',
+  small,
 }: {
   label: string;
   onPress: () => void;
   disabled?: boolean;
   loading?: boolean;
   icon?: ComponentProps<typeof Ionicons>['name'];
-  variant?: 'solid' | 'accent' | 'soft';
+  variant?: keyof typeof VARIANT_TONE;
+  small?: boolean;
 }) {
-  const color = variant === 'solid' ? Colors.white : Colors.black;
   return (
-    <Tappable
+    <Chunky
       accessibilityLabel={label}
       onPress={onPress}
       disabled={disabled || loading}
-      style={[styles.button, styles[variant], disabled && styles.dimmed]}>
+      tone={disabled ? 'white' : VARIANT_TONE[variant]}
+      radius={small ? 18 : 22}
+      depth={small ? 4 : 6}
+      style={disabled && styles.dimmed}
+      faceStyle={[styles.button, small && styles.buttonSmall]}>
       {loading ? (
-        <ActivityIndicator color={color} />
+        <ActivityIndicator color={Colors.black} />
       ) : (
         <View style={styles.buttonRow}>
-          {icon !== undefined && <Ionicons name={icon} size={22} color={color} />}
-          <Text style={[styles.buttonLabel, { color }]}>{label}</Text>
+          {icon !== undefined && <Ionicons name={icon} size={small ? 18 : 24} color={Colors.black} />}
+          <Text style={[styles.buttonLabel, small && styles.buttonLabelSmall]}>{label}</Text>
         </View>
       )}
-    </Tappable>
+    </Chunky>
   );
 }
 
@@ -118,9 +197,9 @@ export function IconButton({
   onPress: () => void;
 }) {
   return (
-    <Tappable accessibilityLabel={label} onPress={onPress} hitSlop={12} scaleTo={0.9} style={styles.iconButton}>
+    <Chunky accessibilityLabel={label} onPress={onPress} hitSlop={12} radius={24} depth={4} faceStyle={styles.iconButton}>
       <Ionicons name={icon} size={24} color={Colors.black} />
-    </Tappable>
+    </Chunky>
   );
 }
 
@@ -150,20 +229,49 @@ export function Chip({
   onPress?: () => void;
 }) {
   return (
-    <Tappable
+    <Chunky
       accessibilityState={{ selected }}
       onPress={onPress}
       disabled={onPress === undefined}
-      scaleTo={0.92}
-      style={[styles.chip, selected && styles.chipSelected]}>
+      tone={selected ? 'green' : 'white'}
+      radius={Radius.pill}
+      depth={4}
+      faceStyle={styles.chip}>
       <Text style={styles.chipLabel}>{label}</Text>
-    </Tappable>
+    </Chunky>
+  );
+}
+
+export function ProgressBar({
+  progress,
+  color = Colors.green,
+  track = Colors.white,
+  height = 16,
+}: {
+  progress: number;
+  color?: string;
+  track?: string;
+  height?: number;
+}) {
+  const shown = useSharedValue(0);
+  useEffect(() => {
+    shown.set(withSpring(Math.max(0, Math.min(1, progress)), { damping: 14, stiffness: 120 }));
+  }, [progress, shown]);
+  const fill = useAnimatedStyle(() => ({ width: `${Math.max(0, Math.min(1, shown.get())) * 100}%` }));
+  return (
+    <View style={[styles.track, { height, borderRadius: height / 2, backgroundColor: track }]}>
+      <Animated.View style={[styles.fill, { borderRadius: height / 2, backgroundColor: color }, fill]}>
+        <View style={[styles.shine, { top: height * 0.2, height: height * 0.22 }]} />
+      </Animated.View>
+    </View>
   );
 }
 
 export function Avatar({ name, size = 48 }: { name: string; size?: number }) {
+  const tone = BRIGHT_TONES[(name.codePointAt(0) ?? 0) % BRIGHT_TONES.length];
   return (
-    <View style={[styles.avatar, { width: size, height: size, borderRadius: size / 2 }]}>
+    <View
+      style={[styles.avatar, { width: size, height: size, borderRadius: size / 2, backgroundColor: Tones[tone].face }]}>
       <Text style={[styles.avatarText, { fontSize: size * 0.4 }]}>{name.trim().slice(0, 2).toUpperCase()}</Text>
     </View>
   );
@@ -172,7 +280,7 @@ export function Avatar({ name, size = 48 }: { name: string; size?: number }) {
 export function Loading() {
   return (
     <View style={styles.center}>
-      <ActivityIndicator color={Colors.greenDeep} size="large" />
+      <ActivityIndicator color={Colors.greenDark} size="large" />
     </View>
   );
 }
@@ -180,7 +288,6 @@ export function Loading() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: Colors.white,
     alignItems: 'center',
   },
   content: {
@@ -188,6 +295,33 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: MaxContentWidth,
     paddingHorizontal: Spacing.four,
+  },
+  hero: {
+    paddingHorizontal: Spacing.four,
+    paddingBottom: Spacing.four,
+    borderBottomLeftRadius: 36,
+    borderBottomRightRadius: 36,
+    gap: Spacing.three,
+  },
+  heroOverscroll: {
+    position: 'absolute',
+    top: -800,
+    left: 0,
+    right: 0,
+    height: 800,
+  },
+  chunkyEdge: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  chunkyFace: {
+    flexGrow: 1,
+  },
+  chunkyOutline: {
+    borderWidth: 2,
+    borderColor: Colors.line,
   },
   title: {
     color: Colors.black,
@@ -206,19 +340,13 @@ const styles = StyleSheet.create({
   },
   button: {
     minHeight: 60,
-    borderRadius: Radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: Spacing.four,
   },
-  solid: {
-    backgroundColor: Colors.black,
-  },
-  accent: {
-    backgroundColor: Colors.green,
-  },
-  soft: {
-    backgroundColor: Colors.soft,
+  buttonSmall: {
+    minHeight: 44,
+    paddingHorizontal: Spacing.three,
   },
   buttonRow: {
     flexDirection: 'row',
@@ -226,11 +354,16 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
   },
   buttonLabel: {
+    color: Colors.black,
+    fontFamily: Fonts.displayBold,
+    fontSize: 21,
+  },
+  buttonLabelSmall: {
     fontFamily: Fonts.display,
-    fontSize: 20,
+    fontSize: 16,
   },
   dimmed: {
-    opacity: 0.45,
+    opacity: 0.6,
   },
   textButton: {
     alignSelf: 'center',
@@ -238,51 +371,61 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.three,
   },
   textButtonLabel: {
-    color: Colors.gray,
-    fontFamily: Fonts.sansBold,
+    color: Colors.greenDeep,
+    fontFamily: Fonts.sansHeavy,
     fontSize: 16,
   },
   iconButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: Colors.soft,
+    width: 48,
+    height: 48,
     alignItems: 'center',
     justifyContent: 'center',
   },
   field: {
-    minHeight: 58,
+    minHeight: 60,
     borderRadius: Radius.field,
+    borderWidth: 2,
+    borderColor: Colors.line,
     paddingHorizontal: Spacing.three,
     color: Colors.black,
-    backgroundColor: Colors.soft,
-    fontFamily: Fonts.sansSemi,
+    backgroundColor: Colors.white,
+    fontFamily: Fonts.sansBold,
     fontSize: 18,
     ...Platform.select({ web: { outlineColor: Colors.green } }),
   },
   card: {
     borderRadius: Radius.card,
+    borderWidth: 2,
+    borderBottomWidth: 6,
+    borderColor: Colors.line,
     backgroundColor: Colors.white,
     padding: Spacing.four,
     gap: Spacing.three,
-    ...Shadow.card,
   },
   chip: {
-    borderRadius: Radius.pill,
     paddingHorizontal: Spacing.three,
     paddingVertical: 10,
-    backgroundColor: Colors.soft,
-  },
-  chipSelected: {
-    backgroundColor: Colors.green,
   },
   chipLabel: {
     color: Colors.black,
     fontFamily: Fonts.sansBold,
     fontSize: 16,
   },
+  track: {
+    overflow: 'hidden',
+  },
+  fill: {
+    height: '100%',
+    minWidth: 0,
+  },
+  shine: {
+    position: 'absolute',
+    left: 8,
+    right: 8,
+    borderRadius: 4,
+    backgroundColor: 'rgba(255, 255, 255, 0.45)',
+  },
   avatar: {
-    backgroundColor: Colors.soft,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -294,6 +437,6 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.paper,
   },
 });

@@ -4,8 +4,8 @@ import { useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Leggy } from '@/components/leggy';
-import { Button, IconButton, Loading } from '@/components/ui';
+import { Leggy, LeggySays } from '@/components/leggy';
+import { Button, IconButton, Loading, ProgressBar } from '@/components/ui';
 import { Colors, Fonts, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import type { KidId, Legend } from '@/lib/types';
 import { api } from '../../convex/_generated/api';
@@ -39,7 +39,7 @@ export default function StoryScreen() {
       <View style={styles.top}>
         <IconButton icon="close" label="Close" onPress={() => router.back()} />
         <View style={styles.track}>
-          <View style={[styles.fill, { width: `${(Math.min(page + 1, total) / Math.max(total, 1)) * 100}%` }]} />
+          <ProgressBar progress={Math.min(page + 1, total) / Math.max(total, 1)} track={Colors.soft} />
         </View>
         <Text style={styles.counter}>
           {Math.min(page + 1, total)} / {total}
@@ -49,7 +49,9 @@ export default function StoryScreen() {
       <ScrollView contentContainerStyle={styles.page} showsVerticalScrollIndicator={false}>
         {page === 0 && (
           <View style={styles.cover}>
-            <Leggy size={132} pose="reading" />
+            <LeggySays side="top" size={132} pose="reading">
+              Story time! Get comfy.
+            </LeggySays>
             <Text style={styles.title}>{legend.title}</Text>
           </View>
         )}
@@ -75,7 +77,7 @@ export default function StoryScreen() {
             onPress={() => router.replace({ pathname: '/done', params: { kid, day } })}
           />
         ) : (
-          <Button label="Next page" icon="arrow-forward" onPress={() => setPage(page + 1)} />
+          <Button label="Next page" icon="arrow-forward" variant="lemon" onPress={() => setPage(page + 1)} />
         )}
         {page > 0 && <Button label="Back" variant="soft" onPress={() => setPage(page - 1)} />}
       </View>
@@ -86,7 +88,7 @@ export default function StoryScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.paper,
     width: '100%',
     maxWidth: MaxContentWidth,
     alignSelf: 'center',
@@ -103,15 +105,6 @@ const styles = StyleSheet.create({
   },
   track: {
     flex: 1,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: Colors.soft,
-    overflow: 'hidden',
-  },
-  fill: {
-    height: '100%',
-    borderRadius: 4,
-    backgroundColor: Colors.green,
   },
   counter: {
     color: Colors.gray,
@@ -144,8 +137,10 @@ const styles = StyleSheet.create({
   },
   question: {
     gap: Spacing.three,
-    backgroundColor: Colors.greenSoft,
+    backgroundColor: Colors.lemon,
     borderRadius: Radius.card,
+    borderBottomWidth: 6,
+    borderColor: Colors.lemonDark,
     padding: Spacing.four,
   },
   questionHead: {
@@ -154,7 +149,7 @@ const styles = StyleSheet.create({
     gap: Spacing.three,
   },
   questionLabel: {
-    color: Colors.greenDeep,
+    color: Colors.black,
     fontFamily: Fonts.sansHeavy,
     fontSize: 15,
     textTransform: 'uppercase',

@@ -1,15 +1,27 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Image } from 'expo-image';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { StyleSheet, Text, View } from 'react-native';
+import Animated, {
+  FadeIn,
+  FadeOut,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withTiming,
+} from 'react-native-reanimated';
 
 import { LeggySays } from '@/components/leggy';
-import { Body, Button, Card, TextButton } from '@/components/ui';
-import { Colors, Fonts, Radius, Spacing } from '@/constants/theme';
-import { CATEGORY_ART, KINDS, SKILLS } from '@/lib/legends';
+import { Button, Card, TextButton } from '@/components/ui';
+import { BRIGHT_TONES, CATEGORY_TONE, Colors, Fonts, Radius, SKILL_TONE, Spacing, Tones } from '@/constants/theme';
+import { CATEGORY_ART, KINDS, shortStep, SKILLS, stepEmoji } from '@/lib/legends';
 import type { Legend } from '@/lib/types';
+
+const GLANCE_STEPS = 3;
 
 export function LegendView({
   legend,
+  name,
   rerolling,
   onRead,
   onDone,
@@ -18,6 +30,7 @@ export function LegendView({
   onSkip,
 }: {
   legend: Legend;
+  name: string;
   rerolling: boolean;
   onRead: () => void;
   onDone: () => void;
@@ -25,20 +38,21 @@ export function LegendView({
   onPicker: () => void;
   onSkip: () => void;
 }) {
+  const [more, setMore] = useState(false);
   const kind = KINDS[legend.kind];
   const skill = SKILLS[legend.skill];
+  const hasMore =
+    legend.challenge !== undefined ||
+    legend.steps.length > GLANCE_STEPS ||
+    legend.steps.some((step) => shortStep(step).length < step.length - 1);
+
   return (
     <View style={styles.container}>
       <Card style={styles.card}>
-        <View style={styles.hero}>
-          {legend.challengeImageUrl !== null ? (
-            <Image source={{ uri: legend.challengeImageUrl }} style={styles.heroImage} contentFit="cover" transition={200} />
-          ) : (
-            <Image
-              source={CATEGORY_ART[legend.category]}
-              style={[styles.heroArt, legend.challenge !== undefined && styles.heroArtCaptioned]}
-              contentFit="contain"
-            />
+        <View style={[styles.hero, { backgroundColor: Tones[CATEGORY_TONE[legend.category]].face }]}>
+          <Image source={CATEGORY_ART[legend.category]} style={styles.heroArt} contentFit="contain" />
+          {legend.challengeImageUrl !== null && (
+            <Image source={{ uri: legend.challengeImageUrl }} style={StyleSheet.absoluteFill} contentFit="cover" transition={700} />
           )}
           <View style={styles.badges}>
             <View style={styles.badge}>
@@ -49,53 +63,94 @@ export function LegendView({
               <Text style={styles.badgeLabel}>{legend.minutes} min</Text>
             </View>
           </View>
-          {legend.challenge !== undefined && (
-            <View style={[styles.badge, styles.caption]}>
-              {legend.challengeImageUrl === null && <ActivityIndicator size="small" color={Colors.black} />}
-              <Text style={styles.badgeLabel}>
-                {legend.challengeImageUrl !== null ? "Leggy's try. Can you do better?" : 'Leggy is still drawing its try…'}
-              </Text>
-            </View>
-          )}
+          {legend.challenge !== undefined &&
+            (legend.challengeImageUrl === null ? (
+              <Drawing />
+            ) : (
+              <Animated.View entering={FadeIn.duration(500)} style={[styles.badge, styles.caption]}>
+                <Text style={styles.badgeLabel}>Leggy&apos;s try. Can you do better?</Text>
+              </Animated.View>
+            ))}
         </View>
 
         <View style={styles.body}>
-          <Text style={styles.title}>{legend.title}</Text>
-          {legend.challenge !== undefined && (
-            <LeggySays pose={legend.category === 'bedtime' ? 'sleeping' : 'waving'} size={96}>
-              {legend.challenge}
-            </LeggySays>
-          )}
+          <View style={styles.heading}>
+            <Text style={styles.title}>{legend.title}</Text>
+            <Text style={styles.line}>{kind.line}</Text>
+          </View>
           <View style={styles.steps}>
-            {legend.steps.map((step, i) => (
+            {(more ? legend.steps : legend.steps.slice(0, GLANCE_STEPS)).map((step, i) => (
               <View key={i} style={styles.step}>
-                <View style={styles.stepDot}>
-                  <Text style={styles.stepNumber}>{i + 1}</Text>
+                <View style={[styles.stepDot, { backgroundColor: Tones[BRIGHT_TONES[i % BRIGHT_TONES.length]].soft }]}>
+                  <Text style={styles.stepEmoji}>{stepEmoji(step, i)}</Text>
                 </View>
-                <Body style={styles.stepText}>{step}</Body>
+                <Text style={styles.stepText} numberOfLines={more ? undefined : 2}>
+                  {more ? step : shortStep(step)}
+                </Text>
               </View>
             ))}
           </View>
-          <View style={styles.skill}>
-            <Ionicons name={skill.icon} size={18} color={Colors.greenDeep} />
-            <Text style={styles.skillText}>Trains {skill.label}</Text>
-            <View style={styles.xp}>
+          {more && legend.challenge !== undefined && (
+            <LeggySays pose={legend.category === 'bedtime' ? 'sleeping' : 'waving'} size={88}>
+              {legend.challenge}
+            </LeggySays>
+          )}
+          {hasMore && <TextButton label={more ? 'Show less' : 'Show more'} onPress={() => setMore(!more)} />}
+          {legend.question !== undefined && legend.question.length > 0 && (
+            <View style={styles.question}>
+              <Text style={styles.questionLabel}>Ask {name}</Text>
+              <Text style={styles.questionText} numberOfLines={more ? undefined : 2}>
+                {legend.question}
+              </Text>
+            </View>
+          )}
+          <View style={[styles.skill, { backgroundColor: Tones[SKILL_TONE[legend.skill]].soft }]}>
+            <Ionicons name={skill.icon} size={18} color={Colors.black} />
+            <Text style={styles.skillText}>{skill.label}</Text>
+            <View style={[styles.xp, { backgroundColor: Tones[SKILL_TONE[legend.skill]].face }]}>
               <Text style={styles.xpText}>+{legend.xp} XP</Text>
             </View>
           </View>
         </View>
       </Card>
 
-      {legend.kind === 'story' && (legend.story?.length ?? 0) > 0 && (
-        <Button label="Read it aloud" icon="book" variant="soft" onPress={onRead} />
-      )}
       <Button label="We did it!" icon="checkmark-circle" variant="accent" onPress={onDone} />
-      <Button label="Another idea" icon="shuffle" variant="soft" onPress={onReroll} loading={rerolling} />
-      <View style={styles.links}>
-        <TextButton label="Pick something else" onPress={onPicker} />
-        <TextButton label="Not today" onPress={onSkip} />
+      {legend.kind === 'story' && (legend.story?.length ?? 0) > 0 && (
+        <Button label="Read it aloud" icon="book" variant="lemon" onPress={onRead} />
+      )}
+      <View style={styles.row}>
+        <View style={styles.flex}>
+          <Button label="Another idea" icon="shuffle" variant="soft" small onPress={onReroll} loading={rerolling} />
+        </View>
+        <View style={styles.flex}>
+          <Button label="Pick a theme" icon="grid" variant="soft" small onPress={onPicker} />
+        </View>
       </View>
+      <TextButton label="Not today" onPress={onSkip} />
     </View>
+  );
+}
+
+function Drawing() {
+  const scribble = useSharedValue(0);
+
+  useEffect(() => {
+    scribble.set(withRepeat(withTiming(1, { duration: 420 }), -1, true));
+  }, [scribble]);
+
+  const pencil = useAnimatedStyle(() => ({
+    transform: [
+      { translateX: (scribble.get() - 0.5) * 12 },
+      { translateY: Math.abs(scribble.get() - 0.5) * -6 },
+      { rotate: `${(scribble.get() - 0.5) * 28}deg` },
+    ],
+  }));
+
+  return (
+    <Animated.View exiting={FadeOut.duration(300)} style={[styles.badge, styles.caption]}>
+      <Animated.Text style={[styles.pencil, pencil]}>✏️</Animated.Text>
+      <Text style={styles.badgeLabel}>Leggy is drawing his attempt…</Text>
+    </Animated.View>
   );
 }
 
@@ -103,30 +158,24 @@ const styles = StyleSheet.create({
   container: {
     gap: Spacing.three,
   },
+  flex: {
+    flex: 1,
+  },
   card: {
     padding: 0,
     gap: 0,
+    overflow: 'hidden',
   },
   hero: {
     aspectRatio: 4 / 3,
-    borderTopLeftRadius: Radius.card,
-    borderTopRightRadius: Radius.card,
-    backgroundColor: Colors.greenSoft,
     overflow: 'hidden',
-  },
-  heroImage: {
-    width: '100%',
-    height: '100%',
   },
   heroArt: {
     position: 'absolute',
-    top: 56,
-    bottom: Spacing.two,
+    top: 52,
+    bottom: 56,
     left: 0,
     right: 0,
-  },
-  heroArtCaptioned: {
-    bottom: 60,
   },
   badges: {
     position: 'absolute',
@@ -147,55 +196,89 @@ const styles = StyleSheet.create({
   },
   badgeLabel: {
     color: Colors.black,
-    fontFamily: Fonts.sansBold,
+    fontFamily: Fonts.sansHeavy,
     fontSize: 14,
   },
   caption: {
     position: 'absolute',
-    bottom: Spacing.three,
+    bottom: 12,
     alignSelf: 'center',
+  },
+  pencil: {
+    fontSize: 18,
   },
   body: {
     padding: Spacing.four,
-    gap: Spacing.four,
+    gap: Spacing.three,
+  },
+  heading: {
+    gap: Spacing.one,
   },
   title: {
     color: Colors.black,
     fontFamily: Fonts.displayBold,
-    fontSize: 30,
-    lineHeight: 36,
+    fontSize: 32,
+    lineHeight: 37,
+  },
+  line: {
+    color: Colors.gray,
+    fontFamily: Fonts.sansBold,
+    fontSize: 17,
+    lineHeight: 23,
   },
   steps: {
-    gap: Spacing.three,
+    gap: 12,
   },
   step: {
     flexDirection: 'row',
-    gap: Spacing.three,
-    alignItems: 'flex-start',
+    gap: 12,
+    alignItems: 'center',
   },
   stepDot: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: Colors.green,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  stepNumber: {
-    color: Colors.black,
-    fontFamily: Fonts.display,
-    fontSize: 16,
+  stepEmoji: {
+    fontSize: 22,
+    lineHeight: 28,
   },
   stepText: {
     flex: 1,
-    paddingTop: 2,
+    color: Colors.black,
+    fontFamily: Fonts.sansBold,
+    fontSize: 17,
+    lineHeight: 23,
+  },
+  question: {
+    gap: 2,
+    backgroundColor: Colors.lemon,
+    borderRadius: Radius.field,
+    borderBottomWidth: 4,
+    borderColor: Colors.lemonDark,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: 12,
+  },
+  questionLabel: {
+    color: Colors.black,
+    fontFamily: Fonts.sansHeavy,
+    fontSize: 12,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  questionText: {
+    color: Colors.black,
+    fontFamily: Fonts.display,
+    fontSize: 18,
+    lineHeight: 24,
   },
   skill: {
     flexDirection: 'row',
     alignItems: 'center',
     alignSelf: 'flex-start',
     gap: Spacing.two,
-    backgroundColor: Colors.greenSoft,
     borderRadius: Radius.pill,
     paddingLeft: 14,
     paddingRight: 6,
@@ -203,11 +286,10 @@ const styles = StyleSheet.create({
   },
   skillText: {
     color: Colors.black,
-    fontFamily: Fonts.sansBold,
+    fontFamily: Fonts.sansHeavy,
     fontSize: 15,
   },
   xp: {
-    backgroundColor: Colors.green,
     borderRadius: Radius.pill,
     paddingHorizontal: 10,
     paddingVertical: 4,
@@ -217,9 +299,8 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.sansHeavy,
     fontSize: 14,
   },
-  links: {
+  row: {
     flexDirection: 'row',
-    justifyContent: 'center',
-    gap: Spacing.three,
+    gap: Spacing.two,
   },
 });

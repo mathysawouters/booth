@@ -2,8 +2,8 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { useQuery } from 'convex/react';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { Card } from '@/components/ui';
-import { Colors, Fonts, Spacing } from '@/constants/theme';
+import { Card, ProgressBar } from '@/components/ui';
+import { Colors, Fonts, Radius, SKILL_TONE, Spacing, Tones } from '@/constants/theme';
 import { SKILLS } from '@/lib/legends';
 import type { KidId, SkillName, SkillProgress } from '@/lib/types';
 import { api } from '../../convex/_generated/api';
@@ -14,14 +14,13 @@ export function SkillPanel({ kid, name, highlight }: { kid: KidId; name: string;
     return null;
   }
   return (
-    <Card>
+    <Card style={styles.card}>
       <Text style={styles.heading}>{name}&apos;s skills</Text>
       {skills.map((s) => {
-        const progress = s.nextLevelXp > 0 ? Math.min(1, s.levelXp / s.nextLevelXp) : 0;
-        const active = s.skill === highlight;
+        const tone = Tones[SKILL_TONE[s.skill]];
         return (
-          <View key={s.skill} style={styles.row}>
-            <View style={[styles.icon, active && styles.iconActive]}>
+          <View key={s.skill} style={[styles.row, s.skill === highlight && { backgroundColor: tone.soft }]}>
+            <View style={[styles.icon, { backgroundColor: tone.face, borderColor: tone.edge }]}>
               <Ionicons name={SKILLS[s.skill].icon} size={20} color={Colors.black} />
             </View>
             <View style={styles.info}>
@@ -29,9 +28,12 @@ export function SkillPanel({ kid, name, highlight }: { kid: KidId; name: string;
                 <Text style={styles.name}>{SKILLS[s.skill].label}</Text>
                 <Text style={styles.level}>Level {s.level}</Text>
               </View>
-              <View style={styles.track}>
-                <View style={[styles.fill, { width: `${progress * 100}%` }]} />
-              </View>
+              <ProgressBar
+                progress={s.nextLevelXp > 0 ? s.levelXp / s.nextLevelXp : 0}
+                color={tone.face}
+                track={s.skill === highlight ? Colors.white : tone.soft}
+                height={14}
+              />
             </View>
           </View>
         );
@@ -41,54 +43,48 @@ export function SkillPanel({ kid, name, highlight }: { kid: KidId; name: string;
 }
 
 const styles = StyleSheet.create({
+  card: {
+    gap: 6,
+    padding: Spacing.three,
+  },
   heading: {
     color: Colors.black,
     fontFamily: Fonts.display,
     fontSize: 22,
+    paddingHorizontal: Spacing.two,
   },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.three,
+    gap: 12,
+    padding: Spacing.two,
+    borderRadius: Radius.field,
   },
   icon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: Colors.soft,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    borderBottomWidth: 4,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  iconActive: {
-    backgroundColor: Colors.green,
-  },
   info: {
     flex: 1,
-    gap: 6,
+    gap: 5,
   },
   labels: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'baseline',
   },
   name: {
     color: Colors.black,
-    fontFamily: Fonts.sansBold,
-    fontSize: 16,
+    fontFamily: Fonts.display,
+    fontSize: 17,
   },
   level: {
     color: Colors.gray,
-    fontFamily: Fonts.sansSemi,
-    fontSize: 14,
-  },
-  track: {
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: Colors.soft,
-    overflow: 'hidden',
-  },
-  fill: {
-    height: '100%',
-    borderRadius: 5,
-    backgroundColor: Colors.green,
+    fontFamily: Fonts.sansHeavy,
+    fontSize: 13,
   },
 });

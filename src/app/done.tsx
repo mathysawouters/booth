@@ -5,22 +5,25 @@ import * as Device from 'expo-device';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Platform, ScrollView, type ScrollViewInstance, StyleSheet, Text, View } from 'react-native';
+import Animated, { useAnimatedStyle, useSharedValue, withSequence, withSpring, ZoomIn } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { Burst, Confetti } from '@/components/confetti';
 import { LeggySays } from '@/components/leggy';
 import { LeggyWaiting } from '@/components/leggy-waiting';
 import { LevelUp } from '@/components/level-up';
 import { SkillPanel } from '@/components/skill-panel';
-import { Body, Button, Field, IconButton, Loading, Title } from '@/components/ui';
+import { Body, Button, Field, IconButton, Loading } from '@/components/ui';
 import { VoiceClip } from '@/components/voice-clip';
-import { Colors, Fonts, MaxContentWidth, Radius, Shadow, Spacing } from '@/constants/theme';
+import { Colors, Fonts, MaxContentWidth, Radius, SKILL_TONE, Spacing, Tones } from '@/constants/theme';
 import { errorMessage } from '@/lib/errors';
+import { successHaptic } from '@/lib/haptics';
 import { useScrollToEndOnKeyboard } from '@/lib/keyboard';
 import { useKids } from '@/lib/kids';
-import { CATEGORY_ART } from '@/lib/legends';
-import type { CompleteResult, KidId, Legend } from '@/lib/types';
+import { CATEGORY_ART, SKILLS } from '@/lib/legends';
+import type { CompleteResult, KidId, Legend, SkillName } from '@/lib/types';
 import { upload } from '@/lib/upload';
 import { api } from '../../convex/_generated/api';
 
@@ -100,10 +103,10 @@ export default function DoneScreen() {
       try {
         setReaction((await reactToProof({ legend: open._id })) as string);
       } catch {
-        setReaction(`Wow, ${name}! That was way better than my try.`);
+        setReaction(`Wow, ${name}! Way better than my try.`);
       }
       if (completed.leveledUp) {
-        setTimeout(() => setLevelUpOpen(true), 1200);
+        setTimeout(() => setLevelUpOpen(true), 2400);
       }
     } catch (e) {
       setError(errorMessage(e));
@@ -133,22 +136,28 @@ export default function DoneScreen() {
     const reactionText = reaction ?? legend.reaction ?? null;
     const quoteText = legend.quote ?? (quote.trim() || null);
     return (
-      <ScrollView style={styles.screen} contentContainerStyle={[styles.content, padding]}>
-        <Title>Legend done!</Title>
-        <View style={styles.photos}>
-          <Polaroid uri={yourPhoto} label={name} />
-          <Polaroid uri={legend.challengeImageUrl} fallback={CATEGORY_ART[legend.category]} label="Leggy" />
-        </View>
-        <LeggySays pose={reactionText === null ? 'thinking' : 'proud'} size={150}>
-          {reactionText ?? 'Leggy is looking at your photo…'}
-        </LeggySays>
-        {quoteText !== null && <Text style={styles.quote}>“{quoteText}”</Text>}
-        <SkillPanel kid={kid} name={name} highlight={result?.skill ?? legend.skill} />
-        <Button label="Back to today" onPress={() => router.back()} />
+      <View style={[styles.screen, styles.party]}>
+        <ScrollView contentContainerStyle={[styles.content, padding]}>
+          <View style={styles.stage}>
+            <Burst radius={150} bursts={3} />
+            <LeggySays side="top" pose="cheering" size={170} bouncy>
+              {reactionText ?? 'Let me see, let me see…'}
+            </LeggySays>
+          </View>
+          <XpCounter xp={result?.xp ?? legend.xp} skill={result?.skill ?? legend.skill} />
+          <View style={styles.photos}>
+            <Polaroid uri={yourPhoto} label={name} tilt="-3deg" />
+            <Polaroid uri={legend.challengeImageUrl} fallback={CATEGORY_ART[legend.category]} label="Leggy" tilt="3deg" />
+          </View>
+          {quoteText !== null && <Text style={styles.quote}>“{quoteText}”</Text>}
+          <SkillPanel kid={kid} name={name} highlight={result?.skill ?? legend.skill} />
+          <Button label="Back to today" variant="accent" onPress={() => router.back()} />
+        </ScrollView>
+        <Confetti waves={2} />
         {levelUpOpen && result !== null && (
           <LevelUp skill={result.skill} level={result.level} name={name} onClose={() => setLevelUpOpen(false)} />
         )}
-      </ScrollView>
+      </View>
     );
   }
 
@@ -161,27 +170,28 @@ export default function DoneScreen() {
       keyboardShouldPersistTaps="handled"
       contentContainerStyle={[styles.content, padding]}>
       <View style={styles.top}>
-        <Title style={styles.flex}>We did it!</Title>
+        <View style={styles.flex}>
+          <LeggySays pose="cheering" size={96}>{`Show me, ${name}!`}</LeggySays>
+        </View>
         <IconButton icon="close" label="Close" onPress={() => router.back()} />
       </View>
-      <Body muted>{legend.title}</Body>
 
-      <Text style={styles.label}>Snap a photo</Text>
       {photo !== null ? (
         <Image source={{ uri: photo }} style={styles.preview} contentFit="cover" />
       ) : (
-        <View style={[styles.preview, styles.empty]}>
-          <Ionicons name="camera" size={48} color={Colors.gray} />
+        <View style={[styles.preview, styles.previewEmpty]}>
+          <Ionicons name="camera" size={56} color={Colors.pinkDark} />
+          <Text style={styles.label}>Snap a photo</Text>
         </View>
       )}
       <View style={styles.row}>
         {HAS_CAMERA ? (
           <View style={styles.flex}>
-            <Button label="Camera" icon="camera" variant="soft" onPress={takePhoto} />
+            <Button label="Camera" icon="camera" variant="solid" onPress={takePhoto} />
           </View>
         ) : (
           <View style={styles.flex}>
-            <Button label="Sample" icon="image" variant="soft" onPress={samplePhoto} />
+            <Button label="Sample" icon="image" variant="solid" onPress={samplePhoto} />
           </View>
         )}
         <View style={styles.flex}>
@@ -208,9 +218,44 @@ export default function DoneScreen() {
   );
 }
 
-function Polaroid({ uri, fallback, label }: { uri: string | null; fallback?: number; label: string }) {
+function XpCounter({ xp, skill }: { xp: number; skill: SkillName }) {
+  const [shown, setShown] = useState(0);
+  const pop = useSharedValue(1);
+
+  useEffect(() => {
+    const start = Date.now() + 400;
+    let frame = requestAnimationFrame(function tick() {
+      const progress = Math.min(1, Math.max(0, (Date.now() - start) / 1100));
+      setShown(Math.round(xp * progress));
+      if (progress < 1) {
+        frame = requestAnimationFrame(tick);
+        return;
+      }
+      successHaptic();
+      pop.set(withSequence(withSpring(1.25, { damping: 8, stiffness: 300 }), withSpring(1, { damping: 8, stiffness: 300 })));
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [xp, pop]);
+
+  const bump = useAnimatedStyle(() => ({ transform: [{ scale: pop.get() }, { rotate: '-3deg' }] }));
+  const tone = Tones[SKILL_TONE[skill]];
+
   return (
-    <View style={styles.polaroid}>
+    <Animated.View entering={ZoomIn.delay(200).springify().damping(10)} style={styles.reward}>
+      <Animated.View style={[styles.xp, bump]}>
+        <Text style={styles.xpText}>+{shown} XP</Text>
+      </Animated.View>
+      <View style={[styles.skill, { backgroundColor: tone.face, borderColor: tone.edge }]}>
+        <Ionicons name={SKILLS[skill].icon} size={18} color={Colors.black} />
+        <Text style={styles.skillText}>{SKILLS[skill].label}</Text>
+      </View>
+    </Animated.View>
+  );
+}
+
+function Polaroid({ uri, fallback, label, tilt }: { uri: string | null; fallback?: number; label: string; tilt: string }) {
+  return (
+    <View style={[styles.polaroid, { transform: [{ rotate: tilt }] }]}>
       {uri !== null ? (
         <Image source={{ uri }} style={styles.polaroidImage} contentFit="cover" transition={200} />
       ) : fallback !== undefined ? (
@@ -228,7 +273,11 @@ function Polaroid({ uri, fallback, label }: { uri: string | null; fallback?: num
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.paper,
+  },
+  party: {
+    backgroundColor: Colors.pink,
+    overflow: 'hidden',
   },
   center: {
     alignItems: 'center',
@@ -245,7 +294,7 @@ const styles = StyleSheet.create({
   },
   top: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: Spacing.three,
   },
   flex: {
@@ -255,7 +304,6 @@ const styles = StyleSheet.create({
     color: Colors.black,
     fontFamily: Fonts.display,
     fontSize: 20,
-    marginTop: Spacing.three,
   },
   preview: {
     width: '100%',
@@ -263,10 +311,19 @@ const styles = StyleSheet.create({
     borderRadius: Radius.card,
     overflow: 'hidden',
   },
+  previewEmpty: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.two,
+    backgroundColor: Colors.pinkSoft,
+    borderWidth: 3,
+    borderStyle: 'dashed',
+    borderColor: Colors.pink,
+  },
   empty: {
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: Colors.soft,
+    backgroundColor: Colors.lemon,
   },
   row: {
     flexDirection: 'row',
@@ -280,17 +337,56 @@ const styles = StyleSheet.create({
   error: {
     fontFamily: Fonts.sansBold,
   },
+  stage: {
+    paddingTop: Spacing.two,
+    overflow: 'hidden',
+  },
+  reward: {
+    alignItems: 'center',
+    gap: Spacing.two,
+  },
+  xp: {
+    backgroundColor: Colors.lemon,
+    borderRadius: Radius.card,
+    borderBottomWidth: 8,
+    borderColor: Colors.lemonDark,
+    paddingHorizontal: Spacing.five,
+    paddingVertical: Spacing.two,
+  },
+  xpText: {
+    color: Colors.black,
+    fontFamily: Fonts.displayBold,
+    fontSize: 56,
+    lineHeight: 64,
+    fontVariant: ['tabular-nums'],
+  },
+  skill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderRadius: Radius.pill,
+    borderBottomWidth: 4,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: 6,
+  },
+  skillText: {
+    color: Colors.black,
+    fontFamily: Fonts.display,
+    fontSize: 18,
+  },
   photos: {
     flexDirection: 'row',
     gap: Spacing.three,
+    padding: Spacing.two,
   },
   polaroid: {
     flex: 1,
     borderRadius: Radius.tile,
+    borderBottomWidth: 6,
+    borderColor: 'rgba(27, 42, 18, 0.16)',
     padding: 10,
     gap: Spacing.two,
     backgroundColor: Colors.white,
-    ...Shadow.card,
   },
   polaroidImage: {
     width: '100%',
@@ -308,5 +404,6 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.serifItalic,
     fontSize: 22,
     lineHeight: 32,
+    textAlign: 'center',
   },
 });
