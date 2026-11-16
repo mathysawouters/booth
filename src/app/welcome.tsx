@@ -8,15 +8,16 @@ import { Colors, Fonts, Radius, Spacing } from '@/constants/theme';
 
 export default function WelcomeScreen() {
   const insets = useSafeAreaInsets();
-  const { height } = useWindowDimensions();
+  const { width, height } = useWindowDimensions();
+  const title = Math.min(width, 430) * 0.175;
   return (
-    <Screen style={{ paddingBottom: insets.bottom + Spacing.four }}>
-      <View style={styles.sky}>
-        <Text style={styles.wordmark}>Little Legends</Text>
-        <Text style={styles.tagline}>One fun thing with your kid, every day</Text>
+    <Screen style={{ paddingBottom: insets.bottom + Spacing.three }}>
+      <View style={[styles.sky, { paddingTop: Math.max(Spacing.three, height * 0.145 - insets.top - Spacing.three) }]}>
+        <Text style={[styles.wordmark, { fontSize: title, lineHeight: title * 1.04 }]}>Little{'\n'}Legends</Text>
+        <Text style={styles.tagline}>One fun thing with{'\n'}your kid, every day</Text>
       </View>
       <View style={styles.hill}>
-        <Leggy size={Math.min(320, height * 0.38)} pose="waving" />
+        <Leggy size={height * 0.38} pose="waving" />
       </View>
       <Chunky
         accessibilityLabel="Let's start"
@@ -32,26 +33,22 @@ export default function WelcomeScreen() {
 const styles = StyleSheet.create({
   sky: {
     alignItems: 'center',
-    gap: Spacing.two,
-    paddingTop: Spacing.five,
+    gap: 10,
   },
   wordmark: {
     color: Colors.white,
     fontFamily: Fonts.displayBold,
-    fontSize: 54,
-    lineHeight: 58,
     textAlign: 'center',
-    textShadowColor: 'rgba(27, 42, 18, 0.28)',
-    textShadowOffset: { width: 0, height: 3 },
-    textShadowRadius: 8,
+    textShadowColor: 'rgba(27, 42, 18, 0.3)',
+    textShadowOffset: { width: 0, height: 4 },
+    textShadowRadius: 10,
   },
   tagline: {
     color: Colors.white,
-    fontFamily: Fonts.display,
-    fontSize: 21,
-    lineHeight: 27,
+    fontFamily: Fonts.sansHeavy,
+    fontSize: 22,
+    lineHeight: 28,
     textAlign: 'center',
-    maxWidth: 260,
     textShadowColor: 'rgba(27, 42, 18, 0.3)',
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 6,
@@ -60,10 +57,10 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'flex-end',
-    paddingBottom: Spacing.six,
+    paddingBottom: Spacing.four + 4,
   },
   pill: {
-    minHeight: 64,
+    minHeight: 56,
     alignItems: 'center',
     justifyContent: 'center',
   },
