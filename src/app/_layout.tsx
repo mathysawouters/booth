@@ -113,7 +113,7 @@ function RootNavigator({ fontsReady }: { fontsReady: boolean }) {
 
 function SignInFailed({ onRetry }: { onRetry: () => void }) {
   return (
-    <Screen color={Colors.mint} style={styles.failed}>
+    <Screen style={styles.failed}>
       <LeggySays side="top" size={200} pose="thinking">
         Oops, I can&apos;t find the internet!
       </LeggySays>

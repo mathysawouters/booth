@@ -80,7 +80,7 @@ export default function FamilyScreen() {
       contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + BottomTabInset + Spacing.five }]}
       ListHeaderComponent={
         <View style={styles.header}>
-          <Hero color={Colors.mint} style={styles.hero}>
+          <Hero style={styles.hero}>
             <LeggySays pose="proud" size={112}>
               {feed !== undefined && feed.length === 0 ? 'Finished legends show up here!' : 'Bring the whole gang!'}
             </LeggySays>

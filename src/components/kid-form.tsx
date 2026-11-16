@@ -1,13 +1,8 @@
 import { useMutation } from 'convex/react';
-import { type ComponentProps, useEffect, useRef, useState } from 'react';
+import { Image } from 'expo-image';
+import { type ComponentProps, useRef, useState } from 'react';
 import { Keyboard, ScrollView, type ScrollViewInstance, StyleSheet, Text, View } from 'react-native';
-import Animated, {
-  FadeInRight,
-  interpolateColor,
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
-} from 'react-native-reanimated';
+import Animated, { FadeInRight } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { LeggySays, type Pose } from '@/components/leggy';
@@ -35,9 +30,8 @@ const INTERESTS: Record<string, string> = {
 };
 
 const AGES = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
-const STEP_COLORS = [Colors.mint, Colors.pink, Colors.lemon, Colors.mint];
 const STEP_POSES: Pose[] = ['waving', 'thinking', 'proud', 'reading'];
-const LAST_STEP = STEP_COLORS.length - 1;
+const LAST_STEP = STEP_POSES.length - 1;
 
 export function KidForm({
   title,
@@ -68,15 +62,6 @@ export function KidForm({
   const [error, setError] = useState<string | null>(null);
   const scroll = useRef<ScrollViewInstance>(null);
   const scrollToEndOnKeyboard = useScrollToEndOnKeyboard(scroll);
-  const tint = useSharedValue(0);
-
-  useEffect(() => {
-    tint.set(withTiming(step, { duration: 350 }));
-  }, [step, tint]);
-
-  const background = useAnimatedStyle(() => ({
-    backgroundColor: interpolateColor(tint.get(), [0, 1, 2, 3], STEP_COLORS),
-  }));
 
   function toggle(interest: string) {
     setInterests((list) => (list.includes(interest) ? list.filter((i) => i !== interest) : [...list, interest]));
@@ -129,7 +114,12 @@ export function KidForm({
   ][step];
 
   return (
-    <Animated.View style={[styles.screen, background]}>
+    <Animated.View style={styles.screen}>
+      <Image
+        source={require('@/assets/illustrations/meadow-welcome.jpg')}
+        style={StyleSheet.absoluteFill}
+        contentFit="cover"
+      />
       <ScrollView
         ref={scroll}
         automaticallyAdjustKeyboardInsets

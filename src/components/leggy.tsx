@@ -1,3 +1,4 @@
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { Image } from 'expo-image';
 import { useEffect } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -61,6 +62,45 @@ const EYE_MARGIN = 0.02;
 const BLINK = { duration: 80 };
 const OPEN = { duration: 110 };
 
+const SPARKLES = [
+  { x: -0.12, y: 0.06, delay: 200, color: Colors.lemon },
+  { x: 0.96, y: -0.02, delay: 1100, color: Colors.pink },
+  { x: 1.02, y: 0.46, delay: 1900, color: Colors.lemon },
+  { x: -0.18, y: 0.5, delay: 2700, color: Colors.mint },
+];
+
+function Sparkle({ left, top, size, delay, color }: { left: number; top: number; size: number; delay: number; color: string }) {
+  const pop = useSharedValue(0);
+
+  useEffect(() => {
+    pop.set(
+      withDelay(
+        delay,
+        withRepeat(
+          withSequence(
+            withTiming(1, { duration: 320, easing: Easing.out(Easing.back(2)) }),
+            withTiming(1, { duration: 260 }),
+            withTiming(0, { duration: 320 }),
+            withTiming(0, { duration: 2300 }),
+          ),
+          -1,
+        ),
+      ),
+    );
+  }, [pop, delay]);
+
+  const style = useAnimatedStyle(() => ({
+    opacity: Math.min(1, pop.get()),
+    transform: [{ scale: pop.get() }, { rotate: `${pop.get() * 40}deg` }],
+  }));
+
+  return (
+    <Animated.View pointerEvents="none" style={[styles.sparkle, { left, top }, style]}>
+      <Ionicons name="sparkles" size={size} color={color} />
+    </Animated.View>
+  );
+}
+
 export function Leggy({
   size = 160,
   pose = 'waving',
@@ -72,21 +112,14 @@ export function Leggy({
   sun?: string;
   bouncy?: boolean;
 }) {
-  const wobble = useSharedValue(0);
+  const bob = useSharedValue(0);
+  const sway = useSharedValue(-1);
   const blink = useSharedValue(0);
   const jump = useSharedValue(0);
 
   useEffect(() => {
-    wobble.set(
-      withRepeat(
-        withSequence(
-          withTiming(1, { duration: bouncy ? 320 : 900, easing: Easing.inOut(Easing.quad) }),
-          withTiming(-1, { duration: bouncy ? 320 : 900, easing: Easing.inOut(Easing.quad) }),
-        ),
-        -1,
-        true,
-      ),
-    );
+    bob.set(withRepeat(withTiming(1, { duration: bouncy ? 300 : 850, easing: Easing.inOut(Easing.sin) }), -1, true));
+    sway.set(withRepeat(withTiming(1, { duration: bouncy ? 460 : 2100, easing: Easing.inOut(Easing.sin) }), -1, true));
     blink.set(
       withRepeat(
         withSequence(
@@ -100,16 +133,20 @@ export function Leggy({
         -1,
       ),
     );
-  }, [wobble, blink, bouncy]);
+  }, [bob, sway, blink, bouncy]);
 
   const body = useAnimatedStyle(() => ({
     transform: [
-      { translateY: -Math.abs(wobble.get()) * (bouncy ? size * 0.08 : 5) - jump.get() * size * 0.28 },
-      { rotate: `${wobble.get() * (bouncy ? 5 : 2.5)}deg` },
-      { scaleX: 1 - jump.get() * 0.05 },
-      { scaleY: 1 + jump.get() * 0.07 },
+      { translateY: -bob.get() * size * (bouncy ? 0.08 : 0.035) - jump.get() * size * 0.28 },
+      { rotate: `${sway.get() * (bouncy ? 5 : 2)}deg` },
+      { scaleX: 1.03 - bob.get() * 0.05 - jump.get() * 0.04 },
+      { scaleY: 0.97 + bob.get() * 0.055 + jump.get() * 0.07 },
     ],
   }));
+  const shadow = useAnimatedStyle(() => {
+    const rise = Math.min(1, bob.get() * 0.4 + jump.get());
+    return { opacity: 0.22 - rise * 0.12, transform: [{ scale: 1 - rise * 0.4 }] };
+  });
   const lid = useAnimatedStyle(() => ({ transform: [{ scaleY: blink.get() }] }));
 
   const { source, ratio, eyes } = POSES[pose];
@@ -122,6 +159,7 @@ export function Leggy({
         popHaptic();
         jump.set(
           withSequence(
+            withTiming(-0.25, { duration: 110, easing: Easing.out(Easing.quad) }),
             withTiming(1, { duration: 220, easing: Easing.out(Easing.quad) }),
             withSpring(0, { damping: 7, stiffness: 220 }),
           ),
@@ -131,7 +169,8 @@ export function Leggy({
       {sun !== undefined && (
         <View style={[styles.sun, { backgroundColor: sun, width: size * 0.92, height: size * 0.92, borderRadius: size }]} />
       )}
-      <Animated.View style={[{ width, height: size }, body]}>
+      <Animated.View style={[styles.shadow, { width: width * 0.78, height: size * 0.07, bottom: -size * 0.03 }, shadow]} />
+      <Animated.View style={[styles.body, { width, height: size }, body]}>
         <Image source={source} style={styles.image} contentFit="contain" />
         {eyes.map(([left, top, right, bottom], i) => (
           <Animated.View
@@ -150,6 +189,9 @@ export function Leggy({
           />
         ))}
       </Animated.View>
+      {SPARKLES.map(({ x, y, delay, color }, i) => (
+        <Sparkle key={i} left={x * frame} top={y * size} size={Math.max(12, size * 0.12)} delay={delay} color={color} />
+      ))}
     </Pressable>
   );
 }
@@ -192,6 +234,17 @@ const styles = StyleSheet.create({
   sun: {
     position: 'absolute',
     top: '2%',
+  },
+  body: {
+    transformOrigin: 'bottom',
+  },
+  shadow: {
+    position: 'absolute',
+    borderRadius: 999,
+    backgroundColor: Colors.black,
+  },
+  sparkle: {
+    position: 'absolute',
   },
   lid: {
     position: 'absolute',

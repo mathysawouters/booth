@@ -1,7 +1,7 @@
+import { Image } from 'expo-image';
 import { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import { Sprinkles } from '@/components/confetti';
 import { LeggySays } from '@/components/leggy';
 import { Colors, Spacing } from '@/constants/theme';
 
@@ -15,7 +15,11 @@ export function LeggyWaiting({ lines }: { lines: string[] }) {
 
   return (
     <View style={styles.center}>
-      <Sprinkles colors={[Colors.white, Colors.pink, Colors.mint]} />
+      <Image
+        source={require('@/assets/illustrations/meadow-welcome.jpg')}
+        style={StyleSheet.absoluteFill}
+        contentFit="cover"
+      />
       <LeggySays side="top" size={230} pose="thinking" bouncy>
         {lines[index]}
       </LeggySays>
@@ -29,6 +33,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: Spacing.five,
-    backgroundColor: Colors.lemon,
+    backgroundColor: Colors.sky,
   },
 });

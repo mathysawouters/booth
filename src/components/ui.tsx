@@ -1,4 +1,5 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { Image } from 'expo-image';
 import { type ComponentProps, type ReactNode, useEffect } from 'react';
 import {
   ActivityIndicator,
@@ -103,29 +104,32 @@ export function Chunky({
   );
 }
 
-export function Screen({
-  children,
-  style,
-  color = Colors.paper,
-}: {
-  children: ReactNode;
-  style?: ViewStyle;
-  color?: string;
-}) {
+export function Screen({ children, style }: { children: ReactNode; style?: ViewStyle }) {
   const insets = useSafeAreaInsets();
   return (
-    <View style={[styles.screen, { backgroundColor: color, paddingTop: insets.top + Spacing.three }]}>
+    <View style={[styles.screen, { paddingTop: insets.top + Spacing.three }]}>
+      <Image
+        source={require('@/assets/illustrations/meadow-welcome.jpg')}
+        style={StyleSheet.absoluteFill}
+        contentFit="cover"
+      />
       <View style={[styles.content, style]}>{children}</View>
     </View>
   );
 }
 
-export function Hero({ color, children, style }: { color: string; children: ReactNode; style?: StyleProp<ViewStyle> }) {
+export function Hero({ children, style }: { children: ReactNode; style?: StyleProp<ViewStyle> }) {
   const insets = useSafeAreaInsets();
   return (
-    <View style={[styles.hero, { backgroundColor: color, paddingTop: insets.top + Spacing.three }, style]}>
-      <View style={[styles.heroOverscroll, { backgroundColor: color }]} />
+    <View style={[styles.hero, { paddingTop: insets.top + Spacing.three }, style]}>
+      <View style={styles.heroOverscroll} />
+      <Image
+        source={require('@/assets/illustrations/meadow-today.jpg')}
+        style={StyleSheet.absoluteFill}
+        contentFit="cover"
+      />
       {children}
+      <View style={styles.heroSheet} />
     </View>
   );
 }
@@ -289,6 +293,7 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
     alignItems: 'center',
+    backgroundColor: Colors.sky,
   },
   content: {
     flex: 1,
@@ -298,9 +303,7 @@ const styles = StyleSheet.create({
   },
   hero: {
     paddingHorizontal: Spacing.four,
-    paddingBottom: Spacing.four,
-    borderBottomLeftRadius: 36,
-    borderBottomRightRadius: 36,
+    paddingBottom: Spacing.four + 28,
     gap: Spacing.three,
   },
   heroOverscroll: {
@@ -309,6 +312,17 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 800,
+    backgroundColor: Colors.sky,
+  },
+  heroSheet: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: 28,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    backgroundColor: Colors.paper,
   },
   chunkyEdge: {
     position: 'absolute',
