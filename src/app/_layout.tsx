@@ -15,11 +15,11 @@ import * as SecureStore from 'expo-secure-store';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
-import { Platform, StyleSheet, Text } from 'react-native';
+import { Platform, StyleSheet } from 'react-native';
 
-import { Leggy } from '@/components/leggy';
-import { Body, Button, Screen } from '@/components/ui';
-import { Colors, Fonts, Spacing } from '@/constants/theme';
+import { LeggySays } from '@/components/leggy';
+import { Button, Screen } from '@/components/ui';
+import { Colors, Spacing } from '@/constants/theme';
 import { useDeviceSignIn } from '@/lib/device-sign-in';
 import { KidProvider } from '@/lib/kids';
 import { api } from '../../convex/_generated/api';
@@ -38,7 +38,7 @@ const secureStorage: TokenStorage = {
 
 const theme = {
   ...DefaultTheme,
-  colors: { ...DefaultTheme.colors, background: Colors.white, card: Colors.white, primary: Colors.green, text: Colors.black },
+  colors: { ...DefaultTheme.colors, background: Colors.paper, card: Colors.white, primary: Colors.green, text: Colors.black },
 };
 
 export default function RootLayout() {
@@ -96,7 +96,7 @@ function RootNavigator({ fontsReady }: { fontsReady: boolean }) {
   }
 
   return (
-    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: Colors.white } }}>
+    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: Colors.paper } }}>
       <Stack.Protected guard={onboarded}>
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="add-kid" options={{ presentation: 'modal' }} />
@@ -113,13 +113,11 @@ function RootNavigator({ fontsReady }: { fontsReady: boolean }) {
 
 function SignInFailed({ onRetry }: { onRetry: () => void }) {
   return (
-    <Screen style={styles.failed}>
-      <Leggy size={180} pose="thinking" />
-      <Text style={styles.failedTitle}>Leggy can&apos;t connect</Text>
-      <Body muted style={styles.center}>
-        Check your internet connection and try again.
-      </Body>
-      <Button label="Try again" variant="accent" onPress={onRetry} />
+    <Screen color={Colors.mint} style={styles.failed}>
+      <LeggySays side="top" size={200} pose="thinking">
+        Oops, I can&apos;t find the internet!
+      </LeggySays>
+      <Button label="Try again" icon="refresh" variant="accent" onPress={onRetry} />
     </Screen>
   );
 }
@@ -128,15 +126,6 @@ const styles = StyleSheet.create({
   failed: {
     alignItems: 'center',
     justifyContent: 'center',
-    gap: Spacing.three,
-  },
-  failedTitle: {
-    color: Colors.black,
-    fontFamily: Fonts.display,
-    fontSize: 26,
-    textAlign: 'center',
-  },
-  center: {
-    textAlign: 'center',
+    gap: Spacing.five,
   },
 });

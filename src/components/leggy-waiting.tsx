@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
-import { Leggy } from '@/components/leggy';
-import { Colors, Fonts, Spacing } from '@/constants/theme';
-import { WAITING_LINES } from '@/lib/legends';
+import { Sprinkles } from '@/components/confetti';
+import { LeggySays } from '@/components/leggy';
+import { Colors, Spacing } from '@/constants/theme';
 
-export function LeggyWaiting({ lines = WAITING_LINES }: { lines?: string[] }) {
+export function LeggyWaiting({ lines }: { lines: string[] }) {
   const [index, setIndex] = useState(() => Math.floor(Math.random() * lines.length));
 
   useEffect(() => {
@@ -15,8 +15,10 @@ export function LeggyWaiting({ lines = WAITING_LINES }: { lines?: string[] }) {
 
   return (
     <View style={styles.center}>
-      <Leggy size={240} pose="thinking" />
-      <Text style={styles.line}>{lines[index]}</Text>
+      <Sprinkles colors={[Colors.white, Colors.pink, Colors.mint]} />
+      <LeggySays side="top" size={230} pose="thinking" bouncy>
+        {lines[index]}
+      </LeggySays>
     </View>
   );
 }
@@ -26,15 +28,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: Spacing.four,
     padding: Spacing.five,
-    backgroundColor: Colors.white,
-  },
-  line: {
-    color: Colors.black,
-    fontFamily: Fonts.display,
-    fontSize: 24,
-    lineHeight: 32,
-    textAlign: 'center',
+    backgroundColor: Colors.lemon,
   },
 });

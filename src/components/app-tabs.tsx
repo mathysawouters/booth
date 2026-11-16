@@ -6,9 +6,9 @@ export default function AppTabs() {
   return (
     <NativeTabs
       backgroundColor={Colors.white}
-      indicatorColor={Colors.greenSoft}
-      iconColor={{ default: Colors.gray, selected: Colors.black }}
-      labelStyle={{ default: { color: Colors.gray }, selected: { color: Colors.black } }}>
+      indicatorColor={Colors.green}
+      iconColor={{ default: Colors.gray, selected: Colors.greenDeep }}
+      labelStyle={{ default: { color: Colors.gray }, selected: { color: Colors.greenDeep } }}>
       <NativeTabs.Trigger name="index">
         <NativeTabs.Trigger.Label>Today</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf="sun.max" md="today" />

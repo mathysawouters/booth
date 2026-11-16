@@ -1,7 +1,7 @@
 import type { ComponentProps } from 'react';
 import type Ionicons from '@expo/vector-icons/Ionicons';
 
-import type { Category, LegendKind, SkillName } from '@/lib/types';
+import type { Category, LegendKind, Mode, SkillName } from '@/lib/types';
 
 type IconName = ComponentProps<typeof Ionicons>['name'];
 
@@ -18,35 +18,43 @@ export const CATEGORY_ART: Record<Category, number> = {
   surprise: require('@/assets/illustrations/category-surprise.png'),
 };
 
-export const CATEGORIES: { id: Category; label: string }[] = [
-  { id: 'bedtime', label: 'Bedtime' },
-  { id: 'build', label: 'Build' },
-  { id: 'story', label: 'Story' },
-  { id: 'outside', label: 'Outside' },
-  { id: 'kitchen', label: 'Kitchen' },
-  { id: 'art', label: 'Art' },
-  { id: 'music', label: 'Music' },
-  { id: 'skills', label: 'Skills' },
-  { id: 'calm', label: 'Calm' },
-  { id: 'surprise', label: 'Surprise me' },
-];
+type MenuItem = { category: Category; label: string };
 
-export function orderedCategories(now: Date) {
-  if (now.getHours() >= 18) {
-    return CATEGORIES;
+const MENUS: Record<Mode, MenuItem[]> = {
+  real: [
+    { category: 'build', label: 'Build' },
+    { category: 'outside', label: 'Outside' },
+    { category: 'kitchen', label: 'Kitchen' },
+    { category: 'art', label: 'Art' },
+    { category: 'music', label: 'Music' },
+    { category: 'skills', label: 'Skills' },
+    { category: 'calm', label: 'Calm' },
+    { category: 'bedtime', label: 'Bedtime' },
+  ],
+  phone: [
+    { category: 'story', label: 'Story time' },
+    { category: 'art', label: 'Draw together' },
+    { category: 'skills', label: 'Quiz' },
+    { category: 'music', label: 'Guess the sound' },
+    { category: 'bedtime', label: 'Bedtime story' },
+  ],
+};
+
+export function menuFor(mode: Mode, now: Date): MenuItem[] {
+  const menu = MENUS[mode];
+  if (now.getHours() < 18) {
+    return menu;
   }
-  const [bedtime, ...rest] = CATEGORIES;
-  const surprise = rest.pop()!;
-  return [...rest, bedtime, surprise];
+  return [...menu.filter((item) => item.category === 'bedtime'), ...menu.filter((item) => item.category !== 'bedtime')];
 }
 
-export const KINDS: Record<LegendKind, { label: string; icon: IconName }> = {
-  story: { label: 'Story', icon: 'book' },
-  adventure: { label: 'Adventure', icon: 'compass' },
-  skill: { label: 'Skill', icon: 'trophy' },
-  draw: { label: 'Draw', icon: 'brush' },
-  quiz: { label: 'Quiz', icon: 'help-circle' },
-  sound: { label: 'Sound', icon: 'musical-note' },
+export const KINDS: Record<LegendKind, { label: string; icon: IconName; line: string }> = {
+  story: { label: 'Story', icon: 'book', line: 'A story to read together.' },
+  adventure: { label: 'Adventure', icon: 'compass', line: 'A little mission for two.' },
+  skill: { label: 'Skill', icon: 'trophy', line: 'Learn a real-life trick.' },
+  draw: { label: 'Draw', icon: 'brush', line: 'Make something silly together.' },
+  quiz: { label: 'Quiz', icon: 'help-circle', line: 'A quick quiz, out loud.' },
+  sound: { label: 'Sound', icon: 'musical-note', line: 'Make and guess funny sounds.' },
 };
 
 export const SKILLS: Record<SkillName, { label: string; icon: IconName; growing: string }> = {
@@ -58,10 +66,39 @@ export const SKILLS: Record<SkillName, { label: string; icon: IconName; growing:
   reader: { label: 'Reader', icon: 'library', growing: 'a stronger reader' },
 };
 
+const STEP_EMOJI: [RegExp, string][] = [
+  [/photo|snap|picture|selfie/i, '📸'],
+  [/draw|doodle|sketch|crayon|marker|paint|color/i, '🖍️'],
+  [/build|stack|fort|tower|cushion|pillow|blanket|box|den/i, '🧱'],
+  [/read|story|book|page/i, '📖'],
+  [/sing|song|hum|music|beat|drum|band/i, '🎵'],
+  [/dance|jump|hop|run|race|wiggle|crawl|stomp/i, '🤸'],
+  [/hide|find|search|hunt|spy|treasure|look for/i, '🔍'],
+  [/count|coin|pay|price|money|shop/i, '🪙'],
+  [/eat|snack|fruit|cook|kitchen|taste|smell|mix|stir/i, '🍓'],
+  [/sleep|bed|breath|calm|quiet|whisper|eyes/i, '🌙'],
+  [/outside|walk|garden|park|sky|cloud|leaf|leaves|nature/i, '🌿'],
+  [/guess|quiz|question|ask|answer/i, '❓'],
+  [/record|sound|listen|voice/i, '🎤'],
+  [/hug|thank|kind|help|share|tidy/i, '💛'],
+  [/swap|turn|together|cheer|celebrate|high five/i, '🙌'],
+];
+
+const STEP_FALLBACK = ['👉', '✨', '🎉'];
+
+export function stepEmoji(step: string, index: number): string {
+  return STEP_EMOJI.find(([pattern]) => pattern.test(step))?.[1] ?? STEP_FALLBACK[index % STEP_FALLBACK.length];
+}
+
+export function shortStep(step: string): string {
+  const first = step.match(/^.*?[.!?](?=\s|$)/)?.[0] ?? step;
+  return first.replace(/\.$/, '');
+}
+
 export const WAITING_LINES = [
   'Leggy is tying its shoelaces…',
-  'Leggy is looking under the couch for ideas…',
+  'Leggy is looking under the couch…',
   'Leggy is asking the cat for advice…',
-  'Leggy tripped over an idea. Picking it up…',
-  'Leggy is counting to ten on its toes…',
+  'Leggy tripped over an idea…',
+  'Leggy is counting on its toes…',
 ];

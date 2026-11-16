@@ -61,7 +61,7 @@ const styles = StyleSheet.create({
     width: '100%',
     alignItems: 'center',
     backgroundColor: Colors.white,
-    borderTopWidth: 1,
+    borderTopWidth: 2,
     borderTopColor: Colors.line,
   },
   inner: {
@@ -84,11 +84,11 @@ const styles = StyleSheet.create({
     borderRadius: 999,
   },
   tabFocused: {
-    backgroundColor: Colors.greenSoft,
+    backgroundColor: Colors.green,
   },
   tabLabel: {
     color: Colors.gray,
-    fontFamily: Fonts.sansBold,
+    fontFamily: Fonts.display,
     fontSize: 16,
   },
   tabLabelFocused: {

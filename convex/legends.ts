@@ -338,6 +338,7 @@ export const drawLeggyFail = internalAction({
     try {
       const image = await openaiImage(
         `A deliberately clumsy, cute cartoon of ${LEGGY}. Leggy tried "${legend.title}" and it went hilariously wrong: ${legend.challenge}. Show the funny failed attempt. Bright, friendly kids' picture-book style, simple shapes, soft colors, no text, safe for young children.`,
+        "low",
       );
       if (image === null) {
         return null;

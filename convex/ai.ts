@@ -94,10 +94,16 @@ export async function openaiText(
   return outputText(data)?.trim() || null;
 }
 
-export async function openaiImage(prompt: string): Promise<Blob | null> {
+export async function openaiImage(prompt: string, quality?: "low" | "medium"): Promise<Blob | null> {
   const data = await callOpenAI(
     "/images/generations",
-    { model: process.env.OPENAI_IMAGE_MODEL || DEFAULT_IMAGE_MODEL, prompt, size: "1024x1024", n: 1 },
+    {
+      model: process.env.OPENAI_IMAGE_MODEL || DEFAULT_IMAGE_MODEL,
+      prompt,
+      size: "1024x1024",
+      n: 1,
+      quality,
+    },
     150_000,
   );
   const b64 = (data as { data?: { b64_json?: string }[] } | null)?.data?.[0]?.b64_json;

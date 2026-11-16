@@ -1,9 +1,17 @@
 import { useMutation } from 'convex/react';
-import { type ComponentProps, useRef, useState } from 'react';
-import { ScrollView, type ScrollViewInstance, StyleSheet, Text, View } from 'react-native';
+import { type ComponentProps, useEffect, useRef, useState } from 'react';
+import { Keyboard, ScrollView, type ScrollViewInstance, StyleSheet, Text, View } from 'react-native';
+import Animated, {
+  FadeInRight,
+  interpolateColor,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Body, Button, Chip, Field, IconButton, Title } from '@/components/ui';
+import { LeggySays, type Pose } from '@/components/leggy';
+import { Body, Button, Chunky, Field, IconButton, ProgressBar } from '@/components/ui';
 import { Colors, Fonts, MaxContentWidth, Spacing } from '@/constants/theme';
 import { errorMessage } from '@/lib/errors';
 import { useScrollToEndOnKeyboard } from '@/lib/keyboard';
@@ -11,22 +19,25 @@ import { useKids } from '@/lib/kids';
 import type { KidId } from '@/lib/types';
 import { api } from '../../convex/_generated/api';
 
-const INTERESTS = [
-  'Dinosaurs',
-  'Animals',
-  'Space',
-  'Cars',
-  'Princesses',
-  'Lego',
-  'Drawing',
-  'Music',
-  'Football',
-  'Cooking',
-  'Nature',
-  'Robots',
-];
+const INTERESTS: Record<string, string> = {
+  Dinosaurs: '🦖',
+  Animals: '🐶',
+  Space: '🚀',
+  Cars: '🚗',
+  Princesses: '👑',
+  Lego: '🧱',
+  Drawing: '🎨',
+  Music: '🎵',
+  Football: '⚽',
+  Cooking: '🍳',
+  Nature: '🌳',
+  Robots: '🤖',
+};
 
 const AGES = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+const STEP_COLORS = [Colors.mint, Colors.pink, Colors.lemon, Colors.mint];
+const STEP_POSES: Pose[] = ['waving', 'thinking', 'proud', 'reading'];
+const LAST_STEP = STEP_COLORS.length - 1;
 
 export function KidForm({
   title,
@@ -46,6 +57,7 @@ export function KidForm({
   const insets = useSafeAreaInsets();
   const addKid = useMutation(api.kids.addKid);
   const { select } = useKids();
+  const [step, setStep] = useState(0);
   const [name, setName] = useState('');
   const [age, setAge] = useState<number | null>(null);
   const [interests, setInterests] = useState<string[]>([]);
@@ -56,6 +68,15 @@ export function KidForm({
   const [error, setError] = useState<string | null>(null);
   const scroll = useRef<ScrollViewInstance>(null);
   const scrollToEndOnKeyboard = useScrollToEndOnKeyboard(scroll);
+  const tint = useSharedValue(0);
+
+  useEffect(() => {
+    tint.set(withTiming(step, { duration: 350 }));
+  }, [step, tint]);
+
+  const background = useAnimatedStyle(() => ({
+    backgroundColor: interpolateColor(tint.get(), [0, 1, 2, 3], STEP_COLORS),
+  }));
 
   function toggle(interest: string) {
     setInterests((list) => (list.includes(interest) ? list.filter((i) => i !== interest) : [...list, interest]));
@@ -91,140 +112,229 @@ export function KidForm({
     }
   }
 
-  const customInterests = interests.filter((i) => !INTERESTS.includes(i));
+  function next() {
+    Keyboard.dismiss();
+    setStep(step + 1);
+  }
+
+  const kidName = name.trim() || 'your kid';
   const defaultParentName = `${name.trim() || 'Your kid'}'s parent`;
+  const customInterests = interests.filter((i) => !(i in INTERESTS));
+  const canContinue = step === 0 ? name.trim().length > 0 : step === 1 ? age !== null : true;
+  const question = [
+    title,
+    `How old is ${kidName}?`,
+    `What does ${kidName} love?`,
+    `Anything I should know about ${kidName}?`,
+  ][step];
 
   return (
-    <ScrollView
-      ref={scroll}
-      style={styles.screen}
-      automaticallyAdjustKeyboardInsets
-      keyboardDismissMode="interactive"
-      keyboardShouldPersistTaps="handled"
-      contentContainerStyle={[
-        styles.content,
-        { paddingTop: insets.top + Spacing.three, paddingBottom: insets.bottom + Spacing.five },
-      ]}>
-      <View style={styles.top}>
-        <Title style={styles.title}>{title}</Title>
-        <IconButton icon={closeIcon} label={closeLabel} onPress={onClose} />
-      </View>
-
-      <View style={styles.section}>
-        <Text style={styles.label}>Name</Text>
-        <Field placeholder="Their name" value={name} onChangeText={setName} autoCapitalize="words" />
-      </View>
-
-      <View style={styles.section}>
-        <Text style={styles.label}>Age</Text>
-        <View style={styles.wrap}>
-          {AGES.map((a) => (
-            <Chip key={a} label={String(a)} selected={age === a} onPress={() => setAge(a)} />
-          ))}
-        </View>
-      </View>
-
-      <View style={styles.section}>
-        <Text style={styles.label}>Loves</Text>
-        <View style={styles.wrap}>
-          {[...INTERESTS, ...customInterests].map((interest) => (
-            <Chip
-              key={interest}
-              label={interest}
-              selected={interests.includes(interest)}
-              onPress={() => toggle(interest)}
-            />
-          ))}
-        </View>
-        <Field
-          placeholder="Something else? Type and press enter"
-          value={custom}
-          onChangeText={setCustom}
-          onSubmitEditing={addCustom}
-          returnKeyType="done"
-          submitBehavior="submit"
-        />
-      </View>
-
-      <View style={styles.section}>
-        <Text style={styles.label}>Anything Leggy should know? (optional)</Text>
-        <Field
-          placeholder="Shy with new people, scared of the dark…"
-          value={note}
-          onChangeText={setNote}
-          onFocus={scrollToEndOnKeyboard}
-          autoCapitalize="sentences"
-          autoCorrect
-          multiline
-          style={styles.note}
-        />
-      </View>
-
-      {askParentName && (
-        <View style={styles.section}>
-          <Text style={styles.label}>Your name (optional)</Text>
-          <Body muted>Family sees this next to your legends.</Body>
-          <Field
-            placeholder={defaultParentName}
-            value={parentName}
-            onChangeText={setParentName}
-            onFocus={scrollToEndOnKeyboard}
-            autoCapitalize="words"
-            returnKeyType="done"
+    <Animated.View style={[styles.screen, background]}>
+      <ScrollView
+        ref={scroll}
+        automaticallyAdjustKeyboardInsets
+        keyboardDismissMode="interactive"
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={[
+          styles.content,
+          { paddingTop: insets.top + Spacing.three, paddingBottom: insets.bottom + Spacing.four },
+        ]}>
+        <View style={styles.top}>
+          <IconButton
+            icon={step === 0 ? closeIcon : 'arrow-back'}
+            label={step === 0 ? closeLabel : 'Back'}
+            onPress={step === 0 ? onClose : () => setStep(step - 1)}
           />
+          <View style={styles.progress}>
+            <ProgressBar progress={(step + 1) / (LAST_STEP + 1)} />
+          </View>
         </View>
-      )}
 
-      {error !== null && <Body style={styles.error}>{error}</Body>}
-      <Button
-        label="Save"
-        variant="accent"
-        onPress={save}
-        loading={saving}
-        disabled={name.trim().length === 0 || age === null}
-      />
-    </ScrollView>
+        <LeggySays pose={STEP_POSES[step]} size={112}>
+          {question}
+        </LeggySays>
+
+        <Animated.View key={step} entering={FadeInRight.duration(260)} style={styles.step}>
+          {step === 0 && (
+            <Field
+              placeholder="Their name"
+              value={name}
+              onChangeText={setName}
+              onSubmitEditing={() => canContinue && next()}
+              autoCapitalize="words"
+              returnKeyType="next"
+              autoFocus
+              style={styles.bigField}
+            />
+          )}
+
+          {step === 1 && (
+            <View style={styles.grid}>
+              {AGES.map((a) => (
+                <Chunky
+                  key={a}
+                  accessibilityLabel={String(a)}
+                  accessibilityState={{ selected: age === a }}
+                  onPress={() => setAge(a)}
+                  tone={age === a ? 'green' : 'white'}
+                  style={styles.ageTile}
+                  faceStyle={styles.ageFace}>
+                  <Text style={styles.ageLabel}>{a}</Text>
+                </Chunky>
+              ))}
+            </View>
+          )}
+
+          {step === 2 && (
+            <>
+              <View style={styles.grid}>
+                {[...Object.keys(INTERESTS), ...customInterests].map((interest) => (
+                  <Chunky
+                    key={interest}
+                    accessibilityLabel={interest}
+                    accessibilityState={{ selected: interests.includes(interest) }}
+                    onPress={() => toggle(interest)}
+                    tone={interests.includes(interest) ? 'green' : 'white'}
+                    style={styles.loveTile}
+                    faceStyle={styles.loveFace}>
+                    <Text style={styles.loveEmoji}>{INTERESTS[interest] ?? '⭐'}</Text>
+                    <Text style={styles.loveLabel} numberOfLines={1}>
+                      {interest}
+                    </Text>
+                  </Chunky>
+                ))}
+              </View>
+              <Field
+                placeholder="Something else?"
+                value={custom}
+                onChangeText={setCustom}
+                onSubmitEditing={addCustom}
+                returnKeyType="done"
+                submitBehavior="submit"
+              />
+            </>
+          )}
+
+          {step === LAST_STEP && (
+            <>
+              <Field
+                placeholder="Shy, scared of the dark… (optional)"
+                value={note}
+                onChangeText={setNote}
+                onFocus={scrollToEndOnKeyboard}
+                autoCapitalize="sentences"
+                autoCorrect
+                multiline
+                style={styles.note}
+              />
+              {askParentName && (
+                <>
+                  <Text style={styles.label}>And your name?</Text>
+                  <Field
+                    placeholder={defaultParentName}
+                    value={parentName}
+                    onChangeText={setParentName}
+                    onFocus={scrollToEndOnKeyboard}
+                    autoCapitalize="words"
+                    returnKeyType="done"
+                  />
+                </>
+              )}
+            </>
+          )}
+        </Animated.View>
+
+        <View style={styles.spacer} />
+        {error !== null && <Body style={styles.error}>{error}</Body>}
+        {step < LAST_STEP ? (
+          <Button label="Next" icon="arrow-forward" variant="accent" onPress={next} disabled={!canContinue} />
+        ) : (
+          <Button label="Let's play!" icon="sparkles" variant="accent" onPress={save} loading={saving} />
+        )}
+      </ScrollView>
+    </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: Colors.white,
   },
   content: {
+    flexGrow: 1,
     width: '100%',
     maxWidth: MaxContentWidth,
     alignSelf: 'center',
     paddingHorizontal: Spacing.four,
-    gap: Spacing.four,
+    gap: Spacing.three,
   },
   top: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
     gap: Spacing.three,
   },
-  title: {
+  progress: {
     flex: 1,
   },
-  section: {
+  step: {
     gap: Spacing.three,
+  },
+  bigField: {
+    minHeight: 72,
+    fontFamily: Fonts.display,
+    fontSize: 26,
+  },
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: 10,
+  },
+  ageTile: {
+    width: '22%',
+  },
+  ageFace: {
+    height: 68,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  ageLabel: {
+    color: Colors.black,
+    fontFamily: Fonts.displayBold,
+    fontSize: 30,
+  },
+  loveTile: {
+    width: '31%',
+  },
+  loveFace: {
+    height: 84,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 2,
+    paddingHorizontal: 4,
+  },
+  loveEmoji: {
+    fontSize: 34,
+    lineHeight: 42,
+  },
+  loveLabel: {
+    color: Colors.black,
+    fontFamily: Fonts.sansHeavy,
+    fontSize: 14,
   },
   label: {
     color: Colors.black,
     fontFamily: Fonts.display,
     fontSize: 20,
-  },
-  wrap: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.two,
+    marginTop: Spacing.two,
   },
   note: {
     minHeight: 100,
     paddingTop: Spacing.three,
     textAlignVertical: 'top',
+  },
+  spacer: {
+    flex: 1,
   },
   error: {
     fontFamily: Fonts.sansBold,
