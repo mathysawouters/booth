@@ -2,7 +2,7 @@ import { AbsoluteFill, Img, useCurrentFrame } from 'remotion';
 
 import meadow from '../../../../assets/illustrations/meadow-welcome.jpg';
 import { COPY } from '../../lib/data';
-import { KineticLine, Label, toWords } from './KineticText';
+import { KineticLine, toWords } from './KineticText';
 import { FloatingLeggy } from './Leggy';
 import { EXPO_IN, EXPO_OUT, SOFT, mix, ramp, sway } from './motion';
 import { COLOR, FONT, SAFE } from './theme';
@@ -91,18 +91,6 @@ export function HookScene({ beat, exitAt }: HookSceneProps) {
             'linear-gradient(180deg, rgba(247, 245, 236, 0) 0%, rgba(247, 245, 236, 0.86) 18%, rgba(247, 245, 236, 0.86) 82%, rgba(247, 245, 236, 0) 100%)',
         }}
       />
-      <div
-        style={{
-          position: 'absolute',
-          left: SAFE.x,
-          top: 300,
-          opacity: ramp(frame, 4, 26) * (1 - leave),
-          transform: `translateY(${mix(ramp(frame, 4, 30), 30, 0)}px)`,
-        }}
-      >
-        <Label color={COLOR.ink} size={34}>Tonight · 7 PM</Label>
-        <div style={{ height: 4, width: 120, marginTop: 20, borderRadius: 2, backgroundColor: COLOR.accent }} />
-      </div>
       <div
         style={{
           position: 'absolute',

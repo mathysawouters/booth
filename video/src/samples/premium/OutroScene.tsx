@@ -81,7 +81,7 @@ export function OutroScene({ builtWithAt, length }: OutroSceneProps) {
           transform: `translateY(${mix(built, 20, 0)}px)`,
         }}
       >
-        <div style={{ fontFamily: FONT.display, fontWeight: 600, fontSize: 44, color: COLOR.ink }}>{COPY.builtWith}</div>
+        <div style={{ fontFamily: FONT.display, fontWeight: 600, fontSize: 34, whiteSpace: 'nowrap', color: COLOR.ink }}>{COPY.builtWith}</div>
       </div>
     </AbsoluteFill>
   );

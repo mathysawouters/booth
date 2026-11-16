@@ -54,6 +54,7 @@ export const SCREENS = {
   tonightLong: staticFile('screens/tonight-long.webp'),
   legend: staticFile('screens/legend.webp'),
   legendLong: staticFile('screens/legend-long.webp'),
+  legendPhoto: staticFile('screens/legend-photo.webp'),
   weDidIt: staticFile('screens/we-did-it.webp'),
   celebration: staticFile('screens/celebration.webp'),
   levelUp: staticFile('screens/level-up.webp'),

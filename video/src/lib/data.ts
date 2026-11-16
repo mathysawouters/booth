@@ -2,7 +2,7 @@ export const COPY = {
   hook: ["It's 7 PM.", "You're tired.", 'Your kid wants to play.'],
   name: 'Little Legends',
   tagline: 'One fun thing with your kid, every day.',
-  builtWith: 'Built with Capy, Convex and Revyl',
+  builtWith: 'Built with Capy, Convex, Revyl, OpenAI, Whop and Supermemory',
   disclaimer: 'Sample family, photos generated for this demo',
 } as const;
 

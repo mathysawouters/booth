@@ -27,9 +27,7 @@ const PLAN: FilmPlan = {
         confettiAt: 108,
         screens: [
           { src: SCREENS.todaySurprise, at: 0 },
-          { src: SCREENS.surpriseShake, at: 62 },
-          { src: SCREENS.surpriseOpen, at: 100 },
-          { src: SCREENS.revealed, at: 140 },
+          { src: SCREENS.legendPhoto, at: 104 },
         ],
       },
       {
