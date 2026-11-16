@@ -5,6 +5,7 @@ import { FlatList, Share, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { LeggySays } from '@/components/leggy';
+import { PlusCard } from '@/components/plus-card';
 import { Avatar, Body, Button, Card, Field, Hero, Tappable } from '@/components/ui';
 import { BottomTabInset, Colors, Fonts, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { formatDay } from '@/lib/day';
@@ -85,6 +86,7 @@ export default function FamilyScreen() {
               {feed !== undefined && feed.length === 0 ? 'Finished legends show up here!' : 'Bring the whole gang!'}
             </LeggySays>
           </Hero>
+          <PlusCard />
           <Card>
             <Text style={styles.cardTitle}>Your family code</Text>
             <Text style={styles.code} selectable accessibilityLabel={familyCode ?? 'Loading family code'}>

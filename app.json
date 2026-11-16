@@ -54,7 +54,8 @@
         {
           "calendarPermission": "Allow $(PRODUCT_NAME) to find a free 15 minutes in your day."
         }
-      ]
+      ],
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true,

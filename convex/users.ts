@@ -78,6 +78,7 @@ export const me = query({
       _id: userId,
       name: await displayName(ctx, userId),
       familyCode: user?.familyCode ?? null,
+      plus: user?.plus === true,
     };
   },
 });
