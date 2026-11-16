@@ -1,7 +1,7 @@
 import { useAction, useMutation, useQuery } from 'convex/react';
 import { router } from 'expo-router';
 import { useRef, useState } from 'react';
-import { ScrollView, type ScrollViewInstance, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, type ScrollViewInstance, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import Animated, { ZoomIn } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -45,6 +45,7 @@ function Welcome() {
 
 function KidToday({ kid, kids, onSelect }: { kid: Kid; kids: Kid[]; onSelect: (id: KidId) => void }) {
   const insets = useSafeAreaInsets();
+  const column = Math.min(useWindowDimensions().width, MaxContentWidth);
   const day = localDay(new Date());
   const legend = useQuery(api.legends.legendToday, { kid: kid._id, day }) as Legend | null | undefined;
   const todaysLegend = useAction(api.legends.todaysLegend);
@@ -117,11 +118,11 @@ function KidToday({ kid, kids, onSelect }: { kid: Kid; kids: Kid[]; onSelect: (i
       ref={scroll}
       style={styles.screen}
       contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + BottomTabInset + Spacing.five }]}>
-      <Hero>
+      <Hero style={[styles.hero, { minHeight: column * 0.84 + 28 }]}>
         <Text style={styles.title}>Today with {kid.name}</Text>
-        <View style={styles.scene}>
-          <Leggy size={150} pose={waiting ? 'thinking' : current?.status === 'done' ? 'cheering' : 'waving'} />
-          <StreakSign kid={kid._id} day={day} />
+        <View style={[styles.scene, { paddingLeft: column * 0.13 }]}>
+          <Leggy size={column * 0.42} pose={waiting ? 'thinking' : current?.status === 'done' ? 'cheering' : 'waving'} />
+          <StreakSign kid={kid._id} day={day} width={column * 0.27} />
         </View>
       </Hero>
       <View style={styles.body}>
@@ -169,7 +170,12 @@ const styles = StyleSheet.create({
     maxWidth: MaxContentWidth,
     alignSelf: 'center',
   },
+  hero: {
+    justifyContent: 'space-between',
+    paddingBottom: 28 + Spacing.two,
+  },
   title: {
+    marginTop: Spacing.four,
     color: Colors.white,
     fontFamily: Fonts.displayBold,
     fontSize: 36,
@@ -182,8 +188,7 @@ const styles = StyleSheet.create({
   scene: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    justifyContent: 'space-around',
-    paddingLeft: Spacing.five,
+    justifyContent: 'space-between',
   },
   body: {
     paddingHorizontal: Spacing.four,
