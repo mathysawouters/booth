@@ -28,7 +28,7 @@ const PLAN: FilmPlan = {
         chip: `${WEEK.length} legends kept`,
         ghost: String(WEEK.length),
         leggy: 'reading',
-        screens: [{ src: SCREENS.bookLong, at: 0, long: true }],
+        screens: [{ src: SCREENS.bookLong, at: 0, long: 6000 }],
       },
     ],
   },

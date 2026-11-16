@@ -2,97 +2,88 @@ import { SCREENS } from '../lib/assets';
 import { WEEK } from '../lib/data';
 import { type FilmPlan, PremiumFilm } from '../samples/premium/Film';
 
-export const PREMIUM_FULL_FRAMES = 1560;
+const HOLD = 114;
+const stops = [0, 2, 4, 6].map((index, order) => ({ index, at: 24 + order * HOLD }));
+const finaleAt = stops[stops.length - 1].at + HOLD;
+const weekExitAt = finaleAt + 100;
+const PHONE_FROM = 282;
+const WEEK_FROM = PHONE_FROM + 1080;
+const OUTRO_FROM = WEEK_FROM + weekExitAt;
 
-const LONG_HOLD = 84;
-const SHORT_HOLD = 46;
-const FIRST_STOP = 26;
-
-const stops = WEEK.map((_, index) => ({
-  index,
-  at: FIRST_STOP + Math.ceil(index / 2) * LONG_HOLD + Math.floor(index / 2) * SHORT_HOLD,
-}));
-const finaleAt = stops[stops.length - 1].at + LONG_HOLD;
-const weekExitAt = finaleAt + 84;
-const WEEK_FROM = 800;
+export const PREMIUM_FULL_FRAMES = OUTRO_FROM + 205;
 
 const PLAN: FilmPlan = {
   frames: PREMIUM_FULL_FRAMES,
-  hook: { beat: 38, exitAt: 132 },
+  hook: { beat: 84, exitAt: 282 },
   phone: {
-    from: 140,
-    exitAt: 665,
+    from: PHONE_FROM,
+    exitAt: 1080,
     beats: [
       {
         at: 0,
-        caption: 'One surprise every night',
-        chip: 'Tonight\u2019s box',
+        caption: "Tonight's legend: one surprise activity, made for your kid",
+        chip: 'One a night',
         ghost: '1',
-        confettiAt: 68,
+        confettiAt: 108,
         screens: [
           { src: SCREENS.todaySurprise, at: 0 },
-          { src: SCREENS.surpriseShake, at: 38 },
-          { src: SCREENS.surpriseOpen, at: 64 },
+          { src: SCREENS.surpriseShake, at: 62 },
+          { src: SCREENS.surpriseOpen, at: 100 },
+          { src: SCREENS.revealed, at: 140 },
         ],
       },
       {
-        at: 105,
-        caption: 'A 10-minute idea made for your kid',
+        at: 180,
+        caption: 'Do it together, phone down',
         chip: '10 minutes',
         ghost: '10',
-        screens: [{ src: SCREENS.legendLong, at: 0, long: true }],
-      },
-      {
-        at: 200,
-        caption: 'Leggy goes first. Badly.',
-        chip: 'Can you do better?',
-        ghost: '?',
         leggy: 'thinking',
-        screens: [{ src: SCREENS.legend, at: 0 }],
+        screens: [{ src: SCREENS.legendLong, at: 0, long: 5700 }],
       },
       {
-        at: 285,
-        caption: 'Snap it. Save what they said.',
+        at: 360,
+        caption: 'Snap a photo, Leggy cheers',
         chip: 'We did it!',
         ghost: '!',
-        confettiAt: 54,
+        leggy: 'cheering',
+        confettiAt: 96,
         screens: [
           { src: SCREENS.weDidIt, at: 0 },
-          { src: SCREENS.celebration, at: 50 },
+          { src: SCREENS.celebration, at: 90 },
         ],
       },
       {
-        at: 385,
-        caption: 'Skills level up',
+        at: 540,
+        caption: 'A skill levels up',
         chip: 'Level up',
         ghost: '+1',
-        leggy: 'cheering',
+        leggy: 'proud',
         screens: [{ src: SCREENS.levelUp, at: 0 }],
       },
       {
-        at: 455,
-        caption: 'Every memory lands in the Book',
+        at: 720,
+        caption: 'A book of your kid growing up',
         chip: `${WEEK.length} legends kept`,
         ghost: String(WEEK.length),
         leggy: 'reading',
-        screens: [{ src: SCREENS.bookLong, at: 0, long: true }],
+        screens: [{ src: SCREENS.bookLong, at: 0, long: 6000 }],
       },
       {
-        at: 560,
+        at: 900,
         caption: 'Grandma cheers live',
         chip: 'Family feed',
         ghost: 'xo',
-        cheerAt: 36,
+        cheerAt: 84,
         cheer: ['🎉', '❤️', '👏', '🌟', '😂', '❤️'],
         screens: [
           { src: SCREENS.familyFeed, at: 0 },
-          { src: SCREENS.familyCheer, at: 30 },
+          { src: SCREENS.familyCheer, at: 80 },
         ],
       },
     ],
   },
   week: { from: WEEK_FROM, stops, finaleAt, exitAt: weekExitAt },
-  outro: { from: WEEK_FROM + weekExitAt, builtWithAt: 64 },
+  outro: { from: OUTRO_FROM, builtWithAt: 100 },
 };
 
 export function PremiumFull() {

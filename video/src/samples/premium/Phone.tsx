@@ -6,8 +6,7 @@ import { clamp } from './motion';
 import { COLOR, FONT, accentGlow, shade } from './theme';
 
 const POINTS = { width: 390, height: 844, status: 47, bezel: 12, radius: 54 };
-const DISPLAY_HEIGHT = POINTS.height + POINTS.status;
-const LONG_MIN_HEIGHT = 5000;
+const DISPLAY_HEIGHT = POINTS.height;
 
 export function phoneSize(screenWidth: number) {
   const unit = screenWidth / POINTS.width;
@@ -20,88 +19,21 @@ export function phoneSize(screenWidth: number) {
 
 type ScreenShotProps = {
   src: string;
+  longHeight?: number;
   scroll?: number;
   offset?: number;
   dim?: number;
 };
 
-export function ScreenShot({ src, scroll = 0, offset = 0, dim = 0 }: ScreenShotProps) {
-  const shift = clamp(scroll, 0, 1) * (1 - SCREEN_HEIGHT / LONG_MIN_HEIGHT) * 100;
+export function ScreenShot({ src, longHeight = SCREEN_HEIGHT, scroll = 0, offset = 0, dim = 0 }: ScreenShotProps) {
+  const shift = clamp(scroll, 0, 1) * (1 - SCREEN_HEIGHT / longHeight) * 100;
   return (
-    <div style={{ position: 'absolute', inset: 0, transform: `translateX(${offset * 100}%)`, backgroundColor: COLOR.card }}>
-      <div
-        style={{
-          position: 'absolute',
-          left: 0,
-          right: 0,
-          top: `${(POINTS.status / DISPLAY_HEIGHT) * 100}%`,
-          bottom: 0,
-          overflow: 'hidden',
-        }}
-      >
-        <Img src={src} style={{ display: 'block', width: '100%', height: 'auto', transform: `translateY(${-shift}%)` }} />
-      </div>
-      <div
-        style={{
-          position: 'absolute',
-          left: 0,
-          right: 0,
-          top: 0,
-          height: `${(POINTS.status / DISPLAY_HEIGHT) * 100 + 0.1}%`,
-          overflow: 'hidden',
-        }}
-      >
-        <Img
-          src={src}
-          style={{ display: 'block', width: '100%', height: 'auto', transformOrigin: 'center top', transform: 'scaleY(240)' }}
-        />
-      </div>
+    <div style={{ position: 'absolute', inset: 0, transform: `translateX(${offset * 100}%)`, backgroundColor: COLOR.card, overflow: 'hidden' }}>
+      <Img
+        src={src}
+        style={{ position: 'absolute', left: 0, top: 0, display: 'block', width: '100%', height: 'auto', transform: `translateY(${-shift}%)` }}
+      />
       {dim > 0 ? <div style={{ position: 'absolute', inset: 0, backgroundColor: `rgba(0, 0, 0, ${dim})` }} /> : null}
-    </div>
-  );
-}
-
-function StatusBar({ unit, time }: { unit: number; time: string }) {
-  const ink = 'rgba(12, 13, 11, 0.9)';
-  return (
-    <div style={{ position: 'absolute', left: 0, right: 0, top: 0, height: POINTS.status * unit }}>
-      <div
-        style={{
-          position: 'absolute',
-          left: 0,
-          width: 132 * unit,
-          top: 0,
-          bottom: 0,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          paddingTop: 3 * unit,
-          fontFamily: FONT.display,
-          fontWeight: 600,
-          fontSize: 16.5 * unit,
-          letterSpacing: '-0.01em',
-          color: ink,
-        }}
-      >
-        {time}
-      </div>
-      <svg
-        width={78 * unit}
-        height={16 * unit}
-        viewBox="0 0 78 16"
-        style={{ position: 'absolute', right: 26 * unit, top: 17 * unit }}
-      >
-        <rect x={0} y={10} width={3.4} height={5} rx={1} fill={ink} />
-        <rect x={5.2} y={7.5} width={3.4} height={7.5} rx={1} fill={ink} />
-        <rect x={10.4} y={4.5} width={3.4} height={10.5} rx={1} fill={ink} />
-        <rect x={15.6} y={1.5} width={3.4} height={13.5} rx={1} fill={ink} />
-        <path d="M26 6.2a10.5 10.5 0 0 1 15 0" fill="none" stroke={ink} strokeWidth={2.4} strokeLinecap="round" />
-        <path d="M28.9 9.6a6.4 6.4 0 0 1 9.2 0" fill="none" stroke={ink} strokeWidth={2.4} strokeLinecap="round" />
-        <circle cx={33.5} cy={13.2} r={1.8} fill={ink} />
-        <rect x={48.6} y={2.1} width={24.8} height={12.8} rx={4} fill="none" stroke={ink} strokeOpacity={0.45} strokeWidth={1.2} />
-        <rect x={50.4} y={3.9} width={17} height={9.2} rx={2.4} fill={ink} />
-        <rect x={74.8} y={6} width={2} height={5} rx={1} fill={ink} fillOpacity={0.45} />
-      </svg>
     </div>
   );
 }
@@ -112,7 +44,6 @@ type PhoneFrameProps = {
   rotateY?: number;
   rotateZ?: number;
   sheen?: number;
-  time?: string;
   children: ReactNode;
 };
 
@@ -122,7 +53,6 @@ export function PhoneFrame({
   rotateY = 0,
   rotateZ = 0,
   sheen = -1,
-  time = '7:00',
   children,
 }: PhoneFrameProps) {
   const { unit, width, height } = phoneSize(screenWidth);
@@ -192,7 +122,6 @@ export function PhoneFrame({
           }}
         >
           {children}
-          <StatusBar unit={unit} time={time} />
           <div
             style={{
               position: 'absolute',

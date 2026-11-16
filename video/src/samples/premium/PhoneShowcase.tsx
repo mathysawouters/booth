@@ -9,7 +9,7 @@ import { EXPO_OUT, GLIDE, SOFT, clamp, mix, ramp, sway } from './motion';
 import { FloatingPhone, ScreenShot, phoneSize } from './Phone';
 import { COLOR, FONT, SAFE, shade } from './theme';
 
-export type PhoneScreen = { src: string; at: number; long?: boolean };
+export type PhoneScreen = { src: string; at: number; long?: number };
 
 export type PhoneBeat = {
   at: number;
@@ -29,7 +29,7 @@ const SCREEN_WIDTH = 478;
 const PHONE_X = 520;
 const PHONE_Y = 1128;
 
-const captionSize = (text: string) => (text.length <= 22 ? 144 : text.length <= 28 ? 118 : 102);
+const captionSize = (text: string) => (text.length > 45 ? 82 : text.length > 30 ? 100 : text.length > 22 ? 116 : 140);
 
 export function PhoneShowcase({ beats, exitAt }: PhoneShowcaseProps) {
   const frame = useCurrentFrame();
@@ -41,7 +41,7 @@ export function PhoneShowcase({ beats, exitAt }: PhoneShowcaseProps) {
   const current = Math.max(0, screens.filter((screen) => frame >= screen.at).length - 1);
   const slide = current === 0 ? 1 : ramp(frame, screens[current].at, screens[current].at + 18, EXPO_OUT);
   const scrollOf = (index: number) =>
-    screens[index].long ? ramp(frame, screens[index].at + 12, (screens[index + 1]?.at ?? exitAt) + 6, SOFT) * 0.74 : 0;
+    screens[index].long ? ramp(frame, screens[index].at + 24, (screens[index + 1]?.at ?? exitAt) - 12, SOFT) : 0;
   const kick = current === 0 ? 0 : 1 - slide;
   const beatIndex = Math.max(0, beats.filter((beat) => frame >= beat.at).length - 1);
   const lean = (index: number) => (index % 2 === 0 ? -7 : 7);
@@ -119,9 +119,9 @@ export function PhoneShowcase({ beats, exitAt }: PhoneShowcaseProps) {
         sheen={sheen}
       >
         {current > 0 && slide < 1 ? (
-          <ScreenShot src={screens[current - 1].src} scroll={scrollOf(current - 1)} offset={-0.3 * slide} dim={0.3 * slide} />
+          <ScreenShot src={screens[current - 1].src} longHeight={screens[current - 1].long} scroll={scrollOf(current - 1)} offset={-0.3 * slide} dim={0.3 * slide} />
         ) : null}
-        <ScreenShot src={screens[current].src} scroll={scrollOf(current)} offset={1 - slide} />
+        <ScreenShot src={screens[current].src} longHeight={screens[current].long} scroll={scrollOf(current)} offset={1 - slide} />
       </FloatingPhone>
       {beats.map((beat, index) => {
         const end = beatEnd(index);

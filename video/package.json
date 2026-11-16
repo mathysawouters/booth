@@ -5,6 +5,7 @@
   "description": "Little Legends launch video, built with Remotion",
   "scripts": {
     "studio": "remotion studio",
+    "render": "remotion render Full-Premium out/little-legends.mp4",
     "render:a": "remotion render SampleA-CandyPop samples/a.mp4",
     "render:b": "remotion render SampleB-Scrapbook samples/b.mp4",
     "render:c": "remotion render SampleC-Premium samples/c.mp4",
