@@ -31,10 +31,9 @@ export const createPlusCheckout = action({
         account_id: companyId,
         title: "Little Legends Plus",
         description: "Unlimited legends and stories, the pictures, family sharing and a printed book of the year.",
-        billing_type: "renewal",
+        billing_type: "one_time",
         initial_price: 49,
-        renewal_price: 49,
-        billing_period: 365,
+        expiration_days: 365,
         currency: "usd",
       },
     });
