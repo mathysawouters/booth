@@ -1,0 +1,26 @@
+{
+  "name": "little-legends-video",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Little Legends launch video, built with Remotion",
+  "scripts": {
+    "studio": "remotion studio",
+    "render:a": "remotion render SampleA-CandyPop samples/a.mp4",
+    "render:b": "remotion render SampleB-Scrapbook samples/b.mp4",
+    "render:c": "remotion render SampleC-Premium samples/c.mp4",
+    "render:samples": "npm run render:a && npm run render:b && npm run render:c",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.543",
+    "@remotion/google-fonts": "4.0.543",
+    "@remotion/transitions": "4.0.543",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "remotion": "4.0.543"
+  },
+  "devDependencies": {
+    "@types/react": "~19.3.0",
+    "typescript": "~6.0.3"
+  }
+}
